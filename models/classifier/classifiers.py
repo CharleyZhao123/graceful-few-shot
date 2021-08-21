@@ -37,5 +37,8 @@ class NNClassifier(nn.Module):
         self.temp = temp
 
     def forward(self, x):
-        return utils.compute_logits(x, self.proto, self.metric, self.temp)
+        if self.training:
+            return utils.compute_logits(x, self.proto, self.metric, self.temp)
+        else:
+            return utils.compute_logits(x, self.proto, self.metric, 1.0)
 

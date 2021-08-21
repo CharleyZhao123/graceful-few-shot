@@ -16,6 +16,6 @@ class BasePretrainNetwork(nn.Module):
         self.classifier = models.make(classifier_name, **classifier_args)
 
     def forward(self, x):
-        x = self.encoder(x)
-        x = self.classifier(x)
-        return x
+        feature = self.encoder(x)
+        logits = self.classifier(feature)
+        return feature, logits

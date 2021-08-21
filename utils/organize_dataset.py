@@ -3,6 +3,10 @@ import csv
 from json import encoder
 
 def organize_dataset(input_info, input_dataset_info_path):
+    '''
+    为save/dataset_info/train_class_info.json增加中文名称字段
+    todo: 目前保存的是Unicode码, 可修改为对应汉字
+    '''
     output_info = {}
     for n, label in input_info.items():
         class_info = {
