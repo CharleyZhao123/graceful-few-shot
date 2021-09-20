@@ -59,7 +59,7 @@ def build_dataloader(dataloader_args=default_dataloader_args):
             dataset, dataloader_args['batch_size'], shuffle=False, num_workers=8, pin_memory=True)        
     else:
         dataloader = DataLoader(
-            dataset, dataloader_args['batch_size'], shuffle=True, num_workers=8, pin_memory=True)
+            dataset, dataloader_args['batch_size'], shuffle=True, num_workers=8, pin_memory=False)
     
     return dataloader
 
