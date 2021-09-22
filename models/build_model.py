@@ -1,8 +1,8 @@
+from utils import check_args
 import models
 import torch
 import sys
 sys.path.append('..')
-from utils import check_args
 
 
 def build_model(network_args=None):
@@ -30,6 +30,10 @@ def build_model(network_args=None):
         classifier_para = torch.load(model_load_para['load_classifier'])
         classifier = models.load(classifier_para).classifier
         model.classifier.load_state_dict(classifier.state_dict())
+
+    if model_load_para.get('load_official_backbone'):
+        encoder_para = torch.load(model_load_para['load_official_backbone'])
+        model.encoder.load_state_dict(encoder_para)
 
     return model
 

@@ -2,6 +2,7 @@ import pickle
 import torch
 import os
 
-index_list = list(range(100))
+test = ['a', 'b', 'c']
+new_test = [i + '/' for i in test]
 
-print(index_list)
+print(new_test)
