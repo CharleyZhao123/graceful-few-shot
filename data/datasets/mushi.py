@@ -27,12 +27,14 @@ name2label = {
 
 @register('mushi')
 class MushiSIM(Dataset):
-    def __init__(self, root_path, split='train', augment='default', type='sim_data', shot_num=30, **kwargs):
+    def __init__(self, root_path, split='train', augment='default', type='sim_data', shot_num=70, query_num=15, **kwargs):
 
         self.root_path = root_path
         self.split = split
         self.type = type
         self.shot_num = shot_num
+        self.query_num = query_num
+
         # ===== 按照数据集类型加载和整理数据 =====
         if self.type == 'sim_data':
             self.image, self.label = self.get_sim_data()
@@ -73,7 +75,7 @@ class MushiSIM(Dataset):
             std = torch.tensor(norm_params['std']).view(3, 1, 1).type_as(x)
             return x * std + mean
         self.convert_raw = convert_raw
-    
+
     def get_sim_data(self):
         # 加载仿真数据集信息json文件
         info_json_file = os.path.join(self.root_path, 'dataset_info.json')
@@ -106,8 +108,8 @@ class MushiSIM(Dataset):
 
             # 划分给验证集
             f_val_num = f_class_num - f_train_num
-            f_val_image = f['images'][f_train_num:]
-            f_val_label = [f_label] * f_val_num
+            f_val_image = f['images'][f_train_num:][:self.query_num]
+            f_val_label = ([f_label] * f_val_num)[:self.query_num]
 
             val_image += f_val_image
             val_label += f_val_label
@@ -118,9 +120,9 @@ class MushiSIM(Dataset):
         else:
             image = val_image
             label = val_label
-        
+
         return image, label
-    
+
     def get_true_data(self):
         true_floder_path = os.path.join(self.root_path, 'true')
         class_floder_list = os.listdir(true_floder_path)
@@ -151,8 +153,8 @@ class MushiSIM(Dataset):
 
             # 划分给验证集
             c_val_num = int(c_class_num*default_split['val'])
-            c_val_image = c_image_list[:c_val_num]
-            c_val_label = [c_label] * c_val_num
+            c_val_image = c_image_list[:c_val_num][:self.query_num]
+            c_val_label = ([c_label] * c_val_num)[:self.query_num]
 
             val_image += c_val_image
             val_label += c_val_label
@@ -163,12 +165,11 @@ class MushiSIM(Dataset):
         else:
             image = val_image
             label = val_label
-        
+
         return image, label
-    
+
     def get_mix_data(self):
         pass
-
 
     def __len__(self):
         return len(self.image)
@@ -190,4 +191,3 @@ if __name__ == '__main__':
     # true v1: train: 407 val: 174;
     # true v2: train: 403 val: 171;
     print(len(mushi))
-

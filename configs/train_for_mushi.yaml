@@ -9,7 +9,7 @@ sim_train_dataloader_args: {
         type: sim_data
       },
     sampler_name: default-sampler,
-    batch_size: 60
+    batch_size: 70
 }
 
 true_train_dataloader_args: {
@@ -21,7 +21,7 @@ true_train_dataloader_args: {
         type: true_data
       },
     sampler_name: default-sampler,
-    batch_size: 60
+    batch_size: 70
 }
 
 sim_val_dataloader_args: {
@@ -33,7 +33,7 @@ sim_val_dataloader_args: {
         type: sim_data
       },
     sampler_name: default-sampler,
-    batch_size: 73
+    batch_size: 75
 }
 
 true_val_dataloader_args: {
@@ -45,7 +45,7 @@ true_val_dataloader_args: {
         type: true_data
       },
     sampler_name: default-sampler,
-    batch_size: 73
+    batch_size: 75
 }
 
 true_val_meta_dataloader_args: {
@@ -57,7 +57,7 @@ true_val_meta_dataloader_args: {
         type: true_data
       },
     sampler_name: metatasks-sampler,
-    batch_size: 73
+    batch_size: 75
 }
 
 network_args: {
@@ -78,7 +78,7 @@ network_args: {
 trainer_args: {
   optimizer_name: sgd,
   optimizer_args: {
-    lr: 0.01,
+    lr: 0.001,
     weight_decay: 5.e-4
   },
   max_epoch: 100,

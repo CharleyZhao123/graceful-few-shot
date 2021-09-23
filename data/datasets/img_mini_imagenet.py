@@ -3,6 +3,7 @@ import pickle
 from PIL import Image
 
 import torch
+import clip
 from torch.utils.data import Dataset
 from torchvision import transforms
 
@@ -64,6 +65,11 @@ class ImgMiniImageNet(Dataset):
                 transforms.ToTensor(),
                 normalize,
             ])
+        elif augment == 'clip':
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            _, preprocess = clip.load('ViT-B/32', device)
+            self.transform = preprocess
+
         else:
             self.transform = self.default_transform
 

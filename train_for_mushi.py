@@ -35,7 +35,7 @@ def main(config):
         config['true_train_dataloader_args'])
 
     # final train data
-    train_dataloader = true_train_dataloader
+    train_dataloader = sim_train_dataloader
 
     # sim val data
     sim_val_dataloader = build_dataloader(config['sim_val_dataloader_args'])

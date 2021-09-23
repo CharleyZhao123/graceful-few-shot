@@ -42,7 +42,7 @@ def build_dataloader(dataloader_args=default_dataloader_args):
 
     # ===== 设定sampler, dataloader =====
     if dataloader_args['sampler_name'] == 'metatasks-sampler':
-        if not dataloader_args.get['sampler_args']:
+        if not dataloader_args.get('sampler_args'):
             sampler_args = default_dataloader_args
         else:
             sampler_args = check_args(

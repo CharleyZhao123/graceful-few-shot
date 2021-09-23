@@ -1,0 +1,19 @@
+test_dataloader_args: {
+    dataset_name: img-mini-imagenet,
+    dataset_args:
+      {
+        split: test,
+        augment: clip
+      },
+    sampler_name: metatasks-sampler,
+    sampler_args: 
+    {
+      batch_num: 200,
+      shot_num: 1,
+      way_num: 5,
+      query_num: 15
+    },
+    batch_size: 4
+}
+
+similarity_method: 'cos'  # 'cos', 'sqr'

@@ -8,6 +8,7 @@ from utils.check_arguments import check_args
 from torch.optim import SGD, Adam
 from torch.optim.lr_scheduler import MultiStepLR
 
+from . import few_shot
 
 class Averager():
 
@@ -164,3 +165,4 @@ def freeze_bn(model):
     for m in model.modules():
         if isinstance(m, nn.BatchNorm2d):
             m.eval()
+
