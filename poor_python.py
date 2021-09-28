@@ -2,7 +2,7 @@ import pickle
 import torch
 import os
 
-test = ['a', 'b', 'c']
-new_test = [i + '/' for i in test]
+theta = torch.tensor([0], dtype=torch.float)
+theta = torch.nn.Parameter(theta)
 
-print(new_test)
+

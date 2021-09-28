@@ -1,5 +1,20 @@
 # train: [sim: 67; true v1: 37; true v2: 31]
 # val: [sim: 89; true v1: 87; true v2: 57]
+
+mix_train_dataloader_args: {
+    dataset_name: mushi,
+    dataset_args:
+      {
+        split: train,
+        augment: resize,
+        type: mix_data,
+        shot_num: 70, 
+        query_num: 15
+      },
+    sampler_name: default-sampler,
+    batch_size: 70
+}
+
 sim_train_dataloader_args: {
     dataset_name: mushi,
     dataset_args:

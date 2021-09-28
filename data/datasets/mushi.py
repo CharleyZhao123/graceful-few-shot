@@ -32,14 +32,14 @@ class MushiSIM(Dataset):
         self.root_path = root_path
         self.split = split
         self.type = type
-        self.shot_num = shot_num
-        self.query_num = query_num
 
         # ===== 按照数据集类型加载和整理数据 =====
         if self.type == 'sim_data':
-            self.image, self.label = self.get_sim_data()
-        else:
-            self.image, self.label = self.get_true_data()
+            self.image, self.label = self.get_sim_data(shot_num, query_num)
+        elif self.type == 'true_data':
+            self.image, self.label = self.get_true_data(shot_num, query_num)
+        elif self.type == 'mix_data':
+            self.image, self.label = self.get_mix_data(shot_num, query_num)
 
         # ===== 预处理数据 =====
         image_size = 80
@@ -76,7 +76,11 @@ class MushiSIM(Dataset):
             return x * std + mean
         self.convert_raw = convert_raw
 
-    def get_sim_data(self):
+    def get_sim_data(self, shot_num, query_num):
+        '''
+        训练集: 仿真数据
+        测试集: 仿真数据
+        '''
         # 加载仿真数据集信息json文件
         info_json_file = os.path.join(self.root_path, 'dataset_info.json')
         with open(info_json_file, 'r') as json_f:
@@ -100,16 +104,16 @@ class MushiSIM(Dataset):
 
             # 划分给训练集
             f_train_num = int(f_class_num*default_split['train'])
-            f_train_image = f['images'][:f_train_num][:self.shot_num]
-            f_train_label = ([f_label] * f_train_num)[:self.shot_num]
+            f_train_image = f['images'][:f_train_num][:shot_num]
+            f_train_label = ([f_label] * f_train_num)[:shot_num]
 
             train_image += f_train_image
             train_label += f_train_label
 
             # 划分给验证集
             f_val_num = f_class_num - f_train_num
-            f_val_image = f['images'][f_train_num:][:self.query_num]
-            f_val_label = ([f_label] * f_val_num)[:self.query_num]
+            f_val_image = f['images'][f_train_num:][:query_num]
+            f_val_label = ([f_label] * f_val_num)[:query_num]
 
             val_image += f_val_image
             val_label += f_val_label
@@ -123,7 +127,11 @@ class MushiSIM(Dataset):
 
         return image, label
 
-    def get_true_data(self):
+    def get_true_data(self, shot_num, query_num):
+        '''
+        训练集: 真实数据
+        测试集: 真实数据
+        '''
         true_floder_path = os.path.join(self.root_path, 'true')
         class_floder_list = os.listdir(true_floder_path)
 
@@ -145,16 +153,16 @@ class MushiSIM(Dataset):
 
             # 划分给训练集
             c_train_num = int(c_class_num*default_split['train'])
-            c_train_image = c_image_list[:c_train_num][:self.shot_num]
-            c_train_label = ([c_label] * c_train_num)[:self.shot_num]
+            c_train_image = c_image_list[:c_train_num][:shot_num]
+            c_train_label = ([c_label] * c_train_num)[:shot_num]
 
             train_image += c_train_image
             train_label += c_train_label
 
             # 划分给验证集
-            c_val_num = int(c_class_num*default_split['val'])
-            c_val_image = c_image_list[:c_val_num][:self.query_num]
-            c_val_label = ([c_label] * c_val_num)[:self.query_num]
+            c_val_num = c_class_num - c_train_num
+            c_val_image = c_image_list[c_train_num:][:query_num]
+            c_val_label = ([c_label] * c_val_num)[:query_num]
 
             val_image += c_val_image
             val_label += c_val_label
@@ -168,8 +176,32 @@ class MushiSIM(Dataset):
 
         return image, label
 
-    def get_mix_data(self):
-        pass
+    def get_mix_data(self, shot_num, query_num):
+        '''
+        训练集: 仿真和真实数据按比例混合得到
+        测试集: 全部为真实数据
+        '''
+        # 训练集为混合数据
+        if self.split == 'train':
+            sim_true_rate = {
+                'sim': 0.9,
+                'true': 0.1
+            }
+            sim_shot_num = int(shot_num*sim_true_rate['sim'])
+            true_shot_num = shot_num - sim_shot_num
+            # 仿真数据
+            sim_image, sim_label = self.get_sim_data(sim_shot_num, query_num)
+            # 真实数据
+            true_image, true_label = self.get_true_data(
+                true_shot_num, query_num)
+
+            image = sim_image + true_image
+            label = sim_label + true_label
+        # 测试集为真实数据
+        else:
+            image, label = self.get_true_data(shot_num, query_num)
+
+        return image, label
 
     def __len__(self):
         return len(self.image)
@@ -185,8 +217,8 @@ class MushiSIM(Dataset):
 
 if __name__ == '__main__':
     mushi = MushiSIM(
-        root_path='/space1/zhaoqing/dataset/fsl/mushi', split='train', type='true_data')
-    print(mushi.__getitem__(0))
+        root_path='/space1/zhaoqing/dataset/fsl/mushi', split='train', type='mix_data')
+    print(mushi.__getitem__(340))
     # sim: train: 402, val: 178;
     # true v1: train: 407 val: 174;
     # true v2: train: 403 val: 171;

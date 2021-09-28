@@ -96,12 +96,13 @@ def main(config):
 
                 test_acc_list.append(acc)
 
-        print('test epoch {}: acc={:.2f} +- {:.2f} (%), loss={:.4f}'.format(
+        log_str = 'test epoch {}: acc={:.2f} +- {:.2f} (%), loss={:.4f}'.format(
             epoch,
             aves['test_acc'].item() * 100,
             mean_confidence_interval(test_acc_list) * 100,
             aves['test_loss'].item()
-        ))
+        )
+        
 
 
 if __name__ == '__main__':

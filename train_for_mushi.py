@@ -27,6 +27,10 @@ def main(config):
 
     # ===== 准备数据、模型 =====
     # sim train data
+    mix_train_dataloader = build_dataloader(
+        config['mix_train_dataloader_args'])
+
+    # sim train data
     sim_train_dataloader = build_dataloader(
         config['sim_train_dataloader_args'])
 
@@ -35,7 +39,7 @@ def main(config):
         config['true_train_dataloader_args'])
 
     # final train data
-    train_dataloader = sim_train_dataloader
+    train_dataloader = mix_train_dataloader
 
     # sim val data
     sim_val_dataloader = build_dataloader(config['sim_val_dataloader_args'])
