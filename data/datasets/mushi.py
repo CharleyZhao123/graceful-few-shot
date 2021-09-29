@@ -146,6 +146,9 @@ class MushiSIM(Dataset):
 
             c_floder_path = os.path.join(true_floder_path, c)
             c_image_list = os.listdir(c_floder_path)
+
+            c_image_list.sort(key = lambda x: int(x[:-4]))
+            # print(c_image_list)
             # 处理image path
             c_image_list = [os.path.join('true', c, p) for p in c_image_list]
 
@@ -161,8 +164,8 @@ class MushiSIM(Dataset):
 
             # 划分给验证集
             c_val_num = c_class_num - c_train_num
-            c_val_image = c_image_list[c_train_num:][:query_num]
-            c_val_label = ([c_label] * c_val_num)[:query_num]
+            c_val_image = c_image_list[c_train_num:][-query_num:]
+            c_val_label = ([c_label] * c_val_num)[-query_num:]
 
             val_image += c_val_image
             val_label += c_val_label
@@ -217,8 +220,8 @@ class MushiSIM(Dataset):
 
 if __name__ == '__main__':
     mushi = MushiSIM(
-        root_path='/space1/zhaoqing/dataset/fsl/mushi', split='train', type='mix_data')
-    print(mushi.__getitem__(340))
+        root_path='/space1/zhaoqing/dataset/fsl/mushi', split='val', type='true_data')
+    print(mushi.__getitem__(0))
     # sim: train: 402, val: 178;
     # true v1: train: 407 val: 174;
     # true v2: train: 403 val: 171;

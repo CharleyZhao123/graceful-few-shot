@@ -2,6 +2,8 @@ import os
 import shutil
 import torch
 import time
+import random
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 from utils.check_arguments import check_args
@@ -166,3 +168,16 @@ def freeze_bn(model):
         if isinstance(m, nn.BatchNorm2d):
             m.eval()
 
+# set seed
+def set_seed(seed):
+    if seed == 0:
+        print(' random seed')
+        torch.backends.cudnn.benchmark = True
+    else:
+        print('manual seed:', seed)
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
