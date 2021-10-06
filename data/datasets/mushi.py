@@ -186,8 +186,8 @@ class MushiSIM(Dataset):
         # 训练集为混合数据
         if self.split == 'train':
             sim_true_rate = {
-                'sim': 0.9,
-                'true': 0.1
+                'sim': 0.7,
+                'true': 0.3
             }
             sim_shot_num = int(shot_num*sim_true_rate['sim'])
             true_shot_num = shot_num - sim_shot_num
