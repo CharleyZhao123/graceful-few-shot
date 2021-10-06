@@ -42,24 +42,23 @@ class MushiSIM(Dataset):
             self.image, self.label = self.get_mix_data(shot_num, query_num)
 
         # ===== 预处理数据 =====
-        image_size = 80
+        image_size = 224  # 80
         norm_params = {'mean': [0.485, 0.456, 0.406],
                        'std': [0.229, 0.224, 0.225]}
         normalize = transforms.Normalize(**norm_params)
         self.default_transform = transforms.Compose([
-            transforms.Resize([80, 80]),
+            transforms.Resize([224, 224]),
             transforms.ToTensor(),
             normalize,
         ])
-        augment = kwargs.get('augment')
-        if augment == 'resize':
+        if augment == 'crop':
             self.transform = transforms.Compose([
                 transforms.RandomResizedCrop(image_size),
                 transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
                 normalize,
             ])
-        elif augment == 'crop':
+        elif augment == 'resize':
             self.transform = transforms.Compose([
                 transforms.Resize(image_size),
                 transforms.RandomCrop(image_size, padding=8),

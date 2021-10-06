@@ -1,106 +1,103 @@
 # train: [sim: 67; true v1: 37; true v2: 31]
 # val: [sim: 89; true v1: 87; true v2: 57]
 
-mix_train_dataloader_args: {
+mix_train_dataloader_args:
+  {
     dataset_name: mushi,
     dataset_args:
       {
         split: train,
         augment: resize,
         type: mix_data,
-        shot_num: 70, 
-        query_num: 15
+        shot_num: 70,
+        query_num: 30,
       },
     sampler_name: default-sampler,
-    batch_size: 70
-}
+    batch_size: 70,
+  }
 
-sim_train_dataloader_args: {
+sim_train_dataloader_args:
+  {
     dataset_name: mushi,
     dataset_args:
       {
         split: train,
         augment: resize,
-        type: sim_data
+        type: sim_data,
+        shot_num: 70,
+        query_num: 30,
       },
     sampler_name: default-sampler,
-    batch_size: 70
-}
+    batch_size: 70,
+  }
 
-true_train_dataloader_args: {
+true_train_dataloader_args:
+  {
     dataset_name: mushi,
     dataset_args:
       {
         split: train,
         augment: resize,
-        type: true_data,    
-        shot_num: 70, 
-        query_num: 15
+        type: true_data,
+        shot_num: 70,
+        query_num: 30,
       },
     sampler_name: default-sampler,
-    batch_size: 70
-}
+    batch_size: 70,
+  }
 
-sim_val_dataloader_args: {
+sim_val_dataloader_args:
+  {
     dataset_name: mushi,
     dataset_args:
       {
         split: val,
         augment: default,
-        type: sim_data
+        type: sim_data,
+        shot_num: 70,
+        query_num: 30,
       },
     sampler_name: default-sampler,
-    batch_size: 75
-}
+    batch_size: 30,
+  }
 
-true_val_dataloader_args: {
+true_val_dataloader_args:
+  {
     dataset_name: mushi,
     dataset_args:
       {
         split: val,
         augment: default,
         type: true_data,
-        shot_num: 70, 
-        query_num: 15
+        shot_num: 70,
+        query_num: 30,
       },
     sampler_name: default-sampler,
-    batch_size: 75
-}
-
-true_val_meta_dataloader_args: {
-    dataset_name: mushi,
-    dataset_args:
-      {
-        split: val,
-        augment: default,
-        type: true_data
-      },
-    sampler_name: metatasks-sampler,
-    batch_size: 75
-}
-
-network_args: {
-  model_name: base-pretrain-network,
-  model_args: {
-      encoder_name: resnet18,
-      encoder_args: {},
-      classifier_name: linear-classifier,
-      classifier_args: {
-        class_num: 5  # 5
-      }
-  },
-  model_load_para: {
-    load_official_backbone: /space1/zhaoqing/code/graceful-few-shot/models/backbone/pretrained/resnet18-f37072fd.pth,
+    batch_size: 30,
   }
-}
 
-trainer_args: {
-  optimizer_name: sgd,
-  optimizer_args: {
-    lr: 0.001,
-    weight_decay: 5.e-4
-  },
-  max_epoch: 100,
-  save_epoch: 1
-}
+network_args:
+  {
+    model_name: base-pretrain-network,
+    model_args:
+      {
+        encoder_name: resnet18,
+        encoder_args: {},
+        classifier_name: linear-classifier,
+        classifier_args: {
+            class_num: 5, # 5
+          },
+      },
+    model_load_para:
+      {
+        load_official_backbone: /space1/zhaoqing/code/graceful-few-shot/models/backbone/pretrained/resnet18-f37072fd.pth,
+      },
+  }
 
+trainer_args:
+  {
+    optimizer_name: sgd,
+    optimizer_args: { lr: 0.001, weight_decay: 5.e-4 },
+    max_epoch: 100,
+    save_epoch: 1,
+  }

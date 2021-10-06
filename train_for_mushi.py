@@ -1,15 +1,13 @@
+import os
 import argparse
-import models
-from pickle import NONE
-
+import utils
+utils.set_gpu('0')
 import torch
 from models.build_model import build_model
 
 from data import build_dataloader
 import torch.nn.functional as F
 import yaml
-import utils
-import os
 from tqdm import tqdm
 from tensorboardX import SummaryWriter
 

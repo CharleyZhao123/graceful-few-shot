@@ -171,7 +171,7 @@ def freeze_bn(model):
 # set seed
 def set_seed(seed):
     if seed == 0:
-        print(' random seed')
+        print('random seed')
         torch.backends.cudnn.benchmark = True
     else:
         print('manual seed:', seed)
