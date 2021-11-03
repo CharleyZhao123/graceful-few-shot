@@ -1,2 +1,2 @@
-from base_pretrain_network import BasePretrainNetwork
-from gb_classify_network import GBClassifyNetwork
+from .base_pretrain_network import BasePretrainNetwork
+from .gb_classify_network import GBClassifyNetwork

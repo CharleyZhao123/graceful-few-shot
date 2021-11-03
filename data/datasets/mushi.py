@@ -7,7 +7,7 @@ import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-from .datasets import model_register
+from .datasets import dataset_register
 
 default_split = {
     'train': 0.7,
@@ -25,8 +25,8 @@ name2label = {
 }
 
 
-@model_register('mushi')
-class MushiSIM(Dataset):
+@dataset_register('mushi')
+class Mushi(Dataset):
     def __init__(self, root_path, split='train', augment='default', type='sim_data', shot_num=70, query_num=15, **kwargs):
 
         self.root_path = root_path

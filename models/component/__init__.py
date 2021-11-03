@@ -1,1 +1,1 @@
-from multi_view_attention import DotAttention
+from .multi_view_attention import DotAttention

@@ -7,10 +7,10 @@ import clip
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-from .datasets import model_register
+from .datasets import dataset_register
 
 
-@model_register('img-mini-imagenet')
+@dataset_register('img-mini-imagenet')
 class ImgMiniImageNet(Dataset):
 
     def __init__(self, root_path, split='train', **kwargs):

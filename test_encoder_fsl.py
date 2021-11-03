@@ -1,22 +1,18 @@
-# 施工ing
-
-import argparse
-import yaml
 import os
-
+os.environ['CUDA_VISIBLE_DEVICES'] = '7'
+import argparse
 import torch
-import torch.nn as nn
+
+from data import dataloader_init
 import torch.nn.functional as F
 import numpy as np
-import scipy.stats
-from tqdm import tqdm
-from data import build_dataloader
-from sklearn.metrics import roc_auc_score
-
-import models
-from models.build_model import build_model
+import yaml
 import utils
 import utils.few_shot as fs
+from tqdm import tqdm
+import scipy.stats
+from models import build_model
+from data import build_dataloader
 
 
 def mean_confidence_interval(data, confidence=0.95):
@@ -30,76 +26,98 @@ def mean_confidence_interval(data, confidence=0.95):
 def main(config):
     # ===== 准备记录以及log信息 =====
     save_name = args.name
-    save_path = os.path.join('./save/test_fsl', save_name)
+    save_path = os.path.join('./save/test_encoder_fsl', save_name)
 
     utils.ensure_path(save_path)
     utils.set_log_path(save_path)
 
     yaml.dump(config, open(os.path.join(save_path, 'config.yaml'), 'w'))
 
-
     # ===== 准备数据、模型 =====
     # dataloader
     test_dataloader = build_dataloader(config['test_dataloader_args'])
 
     # model
-    encoder_model = build_model(config['network_args'])
-    utils.log('num params: {}'.format(utils.compute_n_params(encoder_model)))
+    network_args = config['network_args']
+    model = build_model(network_args['model_name'], network_args['model_args'], network_args['model_load_para'])
+    utils.log('num params: {}'.format(utils.compute_n_params(model)))
 
-    encoder_model.eval()
+    # task信息
+    test_dataloader_args = config['test_dataloader_args']
+    task_per_batch = test_dataloader_args['batch_size']
 
-    # testing
-    aves_keys = ['vl', 'va']
-    aves = {k: utils.Averager() for k in aves_keys}
+    test_sampler_args = test_dataloader_args['sampler_args']
+    way_num = test_sampler_args['way_num']
+    shot_num = test_sampler_args['shot_num']
+    query_num = test_sampler_args['query_num']
 
+    # ===== 设定随机种子 =====
+    utils.set_seed(1)
+
+    # ===== 测试 =====
     test_epochs = args.test_epochs
-    np.random.seed(0)
-    va_lst = []
+    aves_keys = ['test_loss', 'test_acc']
+    aves = {k: utils.Averager() for k in aves_keys}
+    test_acc_list = []
+
+    model.eval()
+
     for epoch in range(1, test_epochs + 1):
-        for data, _ in tqdm(loader, leave=False):
-            x_shot, x_query = fs.split_shot_query(
-                    data.cuda(), n_way, n_shot, n_query,
-                    ep_per_batch=ep_per_batch)
+        for image, _, _ in tqdm(test_dataloader, leave=False):
+            image = image.cuda()  # [320, 3, 224, 224]
 
             with torch.no_grad():
-                if not args.sauc:
-                    logits = model(x_shot, x_query).view(-1, n_way)
-                    label = fs.make_nk_label(n_way, n_query,
-                            ep_per_batch=ep_per_batch).cuda()
-                    loss = F.cross_entropy(logits, label)
-                    acc = utils.compute_acc(logits, label)
-
-                    aves['vl'].add(loss.item(), len(data))
-                    aves['va'].add(acc, len(data))
-                    va_lst.append(acc)
+                # [320, 512]: 320 = 4 x (5 x (1 + 15))
+                if 'encode_image' in dir(model):
+                    image_feature = model.encode_image(image)
                 else:
-                    x_shot = x_shot[:, 0, :, :, :, :].contiguous()
-                    shot_shape = x_shot.shape[:-3]
-                    img_shape = x_shot.shape[-3:]
-                    bs = shot_shape[0]
-                    p = model.encoder(x_shot.view(-1, *img_shape)).reshape(
-                            *shot_shape, -1).mean(dim=1, keepdim=True)
-                    q = model.encoder(x_query.view(-1, *img_shape)).view(
-                            bs, -1, p.shape[-1])
-                    p = F.normalize(p, dim=-1)
-                    q = F.normalize(q, dim=-1)
-                    s = torch.bmm(q, p.transpose(2, 1)).view(bs, -1).cpu()
-                    for i in range(bs):
-                        k = s.shape[1] // 2
-                        y_true = [1] * k + [0] * k
-                        acc = roc_auc_score(y_true, s[i])
-                        aves['va'].add(acc, len(data))
-                        va_lst.append(acc)
+                    image_feature = model(image)
 
-        print('test epoch {}: acc={:.2f} +- {:.2f} (%), loss={:.4f} (@{})'.format(
-                epoch, aves['va'].item() * 100,
-                mean_confidence_interval(va_lst) * 100,
-                aves['vl'].item(), _[-1]))
+                # 划分shot和query
+                # x_shot: [4, 5, 1, 512]
+                # x_query: [4, 75, 512]
+                x_shot, x_query = fs.split_shot_query(
+                    image_feature, way_num, shot_num, query_num, task_per_batch)
+
+                # 计算相似度和logits
+                if config['similarity_method'] == 'cos':
+                    x_shot = x_shot.mean(dim=-2)
+                    x_shot = F.normalize(x_shot, dim=-1)
+                    x_query = F.normalize(x_query, dim=-1)
+                    metric = 'dot'
+                elif config['similarity_method'] == 'sqr':
+                    x_shot = x_shot.mean(dim=-2)
+                    metric = 'sqr'
+
+                logits = utils.compute_logits(
+                    x_query, x_shot, metric=metric, temp=1.0).view(-1, way_num)
+
+                label = fs.make_nk_label(
+                    way_num, query_num, task_per_batch).cuda()
+
+                loss = F.cross_entropy(logits, label)
+
+                acc = utils.compute_acc(logits, label)
+
+                aves['test_loss'].add(loss.item(), len(image))
+                aves['test_acc'].add(acc, len(image))
+
+                test_acc_list.append(acc)
+
+        log_str = 'test epoch {}: acc={:.2f} +- {:.2f} (%), loss={:.4f}'.format(
+            epoch,
+            aves['test_acc'].item() * 100,
+            mean_confidence_interval(test_acc_list) * 100,
+            aves['test_loss'].item()
+        )
+        utils.log(log_str)
+        
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', default='./configs/test_few_shot.yaml')
+    parser.add_argument('--config', default='./configs/test_encoder_fsl.yaml')
+    parser.add_argument('--name', default='test_encoder_fsl')
     parser.add_argument('--test-epochs', type=int, default=1)
     parser.add_argument('--gpu', default='0')
     args = parser.parse_args()
@@ -107,6 +125,8 @@ if __name__ == '__main__':
     config = yaml.load(open(args.config, 'r'), Loader=yaml.FullLoader)
     if len(args.gpu.split(',')) > 1:
         config['_parallel'] = True
+        config['_gpu'] = args.gpu
 
     utils.set_gpu(args.gpu)
+
     main(config)

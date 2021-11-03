@@ -1,8 +1,5 @@
 import torch.nn as nn
-
-import sys
-sys.path.append('..')
-from model_init import model_register, build_model
+from ..model_init import model_register, build_model
 
 @model_register('base-pretrain-network')
 class BasePretrainNetwork(nn.Module):

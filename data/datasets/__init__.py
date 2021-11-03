@@ -1,4 +1,4 @@
 from .datasets import make
-from . import img_mini_imagenet
-from . import gb_100
-from . import mushi
+from .img_mini_imagenet import ImgMiniImageNet
+from .gb_100 import GB100
+from .mushi import Mushi

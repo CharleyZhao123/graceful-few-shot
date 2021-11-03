@@ -1,2 +1,2 @@
-from classifiers import LinearClassifier
-from classifiers import NNClassifier
+from .classifiers import LinearClassifier
+from .classifiers import NNClassifier

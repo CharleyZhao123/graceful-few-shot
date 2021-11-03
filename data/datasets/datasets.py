@@ -5,7 +5,7 @@ DEFAULT_ROOT = '/space1/zhaoqing/dataset/fsl'
 datasets = {}
 
 
-def model_register(name):
+def dataset_register(name):
     def decorator(cls):
         datasets[name] = cls
         return cls

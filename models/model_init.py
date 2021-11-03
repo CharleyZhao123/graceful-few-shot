@@ -1,5 +1,6 @@
 # from utils import check_args
 import torch
+import clip
 import sys
 sys.path.append('..')
 
@@ -27,6 +28,10 @@ def build_model(model_name, model_args=None, model_load_para=None, **kwargs):
         model_para = torch.load(model_load_para['load'])
         model = model_list[model_para['model']](**model_para['model_args'])
         model.load_state_dict(model_para['model_sd'])
+    elif model_name == 'clip':
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        model, _ = clip.load('ViT-B/32', device)
+        return model
     # 构建随机初始化模型
     else:
         model = model_list[model_name](**model_args)
@@ -50,11 +55,15 @@ def build_model(model_name, model_args=None, model_load_para=None, **kwargs):
     if model_load_para.get('load_old_encoder'):
         model_para = torch.load(model_load_para['load_old_encoder'])['model_sd']
         encoder_dict = {}
-        for k, v in model_para:
+        for k, v in model_para.items():
             if k[:8] == "encoder.":
                 k = k[8:]
                 encoder_dict[k] = v
-        model.encoder.load_state_dict(encoder_para)
+        
+        if 'encoder' in dir(model):
+            model.encoder.load_state_dict(encoder_dict)
+        else:
+            model.load_state_dict(encoder_dict)
     
     # ===== 其他 =====
     if torch.cuda.is_available():

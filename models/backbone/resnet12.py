@@ -1,7 +1,6 @@
 import torch.nn as nn
 import sys
-sys.path.append('.')
-from build_model import model_register
+from ..model_init import model_register
 
 
 def conv3x3(in_planes, out_planes):

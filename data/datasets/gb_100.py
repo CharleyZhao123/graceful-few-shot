@@ -2,11 +2,9 @@ import os
 import pickle
 import random
 
-import torch
 from torch.utils.data import Dataset
-import numpy as np
 
-from .datasets import model_register
+from .datasets import dataset_register
 
 default_split = {
     'train': 0.7,
@@ -14,7 +12,7 @@ default_split = {
 }
 
 
-@model_register('gb-100')
+@dataset_register('gb-100')
 class GB100(Dataset):
     def __init__(self, root_path, split='train', split_method='novel', **kwargs):
         data_file_name = 'gb_dataset.pickle'

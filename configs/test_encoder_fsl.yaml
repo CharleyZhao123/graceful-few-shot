@@ -3,13 +3,13 @@ test_dataloader_args: {
     dataset_args:
       {
         split: test,
-        augment: dafault
+        augment: clip  # clip, default
       },
     sampler_name: metatasks-sampler,
     sampler_args: 
     {
       batch_num: 200,
-      shot_num: 1,
+      shot_num: 5,
       way_num: 5,
       query_num: 15
     },
@@ -18,13 +18,14 @@ test_dataloader_args: {
 
 network_args:
   {
-    model_name: resnet12,
+    model_name: clip,  # resnet12, clip
     model_args:
       { 
       },
     model_load_para:
       {
-        load_pure_encoder: /space1/zhaoqing/code/graceful-few-shot/models/backbone/pretrained/resnet18-f37072fd.pth,
+        load_old_encoder: /space1/zhaoqing/code/few_shot_meta_baseline/save/pre_meta_2_stage/linear/metabasepre2/max-tva.pth,
       },
-    similarity_method: cos  # 'cos', 'sqr'
-  }
+}
+
+similarity_method: cos  # 'cos', 'sqr'
