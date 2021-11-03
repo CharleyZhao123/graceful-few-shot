@@ -1,0 +1,36 @@
+test_dataloader_args: {
+    dataset_name: img-mini-imagenet,
+    dataset_args:
+      {
+        split: test,
+        augment: default
+      },
+    sampler_name: default-sampler,
+    batch_size: 67
+}
+
+network_args: {
+  model_name: base-pretrain-network,
+  model_args: {
+      encoder_name: resnet12,
+      encoder_args: {},
+      classifier_name: nn-classifier,
+      classifier_args: {
+        class_num: 5
+      }
+  },
+  model_load_para: {
+    # load_encoder: /space1/zhaoqing/code/few_shot_meta_baseline/save/only_pre_train/nn/nn_continue/epoch-6.pth,  # 61.52
+  }
+}
+
+trainer_args: {
+  optimizer_name: sgd,
+  optimizer_args: {
+    lr: 0.01,
+    weight_decay: 5.e-4
+  },
+  max_epoch: 100,
+  save_epoch: 1
+}
+
