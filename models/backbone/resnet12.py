@@ -1,7 +1,7 @@
 import torch.nn as nn
 import sys
 sys.path.append('.')
-from models import register
+from build_model import model_register
 
 
 def conv3x3(in_planes, out_planes):
@@ -99,12 +99,12 @@ class ResNet12(nn.Module):
         return x  # [320, 512]
 
 
-@register('resnet12')
-def resnet12():
+@model_register('resnet12')
+def Resnet12():
     return ResNet12([64, 128, 256, 512])
 
 
-@register('resnet12-wide')
-def resnet12_wide():
+@model_register('resnet12-wide')
+def Resnet12_wide():
     return ResNet12([64, 160, 320, 640])
 

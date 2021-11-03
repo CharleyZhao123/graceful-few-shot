@@ -1,2 +1,2 @@
-from resnet12 import resnet12
-from resnet12 import resnet12_wide
+from resnet12 import Resnet12
+from resnet12 import Resnet12_wide

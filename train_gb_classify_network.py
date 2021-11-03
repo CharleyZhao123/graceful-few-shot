@@ -1,9 +1,6 @@
 import argparse
-import models
-from pickle import NONE
-
 import torch
-from models.build_model import build_model
+from models import build_model
 from data import build_dataloader
 import torch.nn.functional as F
 import yaml

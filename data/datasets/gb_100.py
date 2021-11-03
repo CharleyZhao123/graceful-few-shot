@@ -6,7 +6,7 @@ import torch
 from torch.utils.data import Dataset
 import numpy as np
 
-from .datasets import register
+from .datasets import model_register
 
 default_split = {
     'train': 0.7,
@@ -14,7 +14,7 @@ default_split = {
 }
 
 
-@register('gb-100')
+@model_register('gb-100')
 class GB100(Dataset):
     def __init__(self, root_path, split='train', split_method='novel', **kwargs):
         data_file_name = 'gb_dataset.pickle'

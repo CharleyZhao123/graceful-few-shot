@@ -3,9 +3,9 @@ import torch.nn as nn
 import models
 import sys
 sys.path.append('..')
-from models import register
+from models import model_register
 
-@register('gb-classify-network')
+@model_register('gb-classify-network')
 class GBClassifyNetwork(nn.Module):
     def __init__(self, encoder_name, encoder_args, classifier_name, classifier_args):
         super().__init__()

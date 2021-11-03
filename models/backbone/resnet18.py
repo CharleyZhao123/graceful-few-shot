@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from models import register
+from models import model_register
 import torch.nn as nn
 import sys
 sys.path.append('.')
@@ -184,7 +184,7 @@ class ResNet(nn.Module):
         return out4
 
 
-@register('resnet18')
+@model_register('resnet18')
 def resnet18(**kwargs):
     """Constructs a ResNet-18 model."""
     model = ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)

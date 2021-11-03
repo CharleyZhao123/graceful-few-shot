@@ -7,10 +7,10 @@ import models
 import utils
 import sys
 sys.path.append('..')
-from models import register
+from models import model_register
 
 
-@register('linear-classifier')
+@model_register('linear-classifier')
 class LinearClassifier(nn.Module):
 
     def __init__(self, in_dim, class_num):
@@ -21,7 +21,7 @@ class LinearClassifier(nn.Module):
         return self.linear(x)
 
 
-@register('nn-classifier')
+@model_register('nn-classifier')
 class NNClassifier(nn.Module):
 
     def __init__(self, in_dim, class_num, metric='cos', temp=None):

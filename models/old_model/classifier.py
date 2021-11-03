@@ -3,9 +3,9 @@ import torch.nn as nn
 import models
 import sys
 sys.path.append('..')
-from models import register
+from models import model_register
 
-@register('classifier')
+@model_register('classifier')
 class Classifier(nn.Module):
     
     def __init__(self, encoder, encoder_args,

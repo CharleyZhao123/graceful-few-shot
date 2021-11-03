@@ -14,9 +14,9 @@ import torch
 import torch.nn.functional as F
 import sys
 sys.path.append('..')
-from models import register
+from models import model_register
 
-@register('dot_attention')
+@model_register('dot_attention')
 class DotAttention(object):
     '''
     无参点积Attention

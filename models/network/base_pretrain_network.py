@@ -1,19 +1,18 @@
 import torch.nn as nn
 
-import models
 import sys
 sys.path.append('..')
-from models import register
+from model_init import model_register, build_model
 
-@register('base-pretrain-network')
+@model_register('base-pretrain-network')
 class BasePretrainNetwork(nn.Module):
     
     def __init__(self, encoder_name, encoder_args,
                  classifier_name, classifier_args):
         super().__init__()
-        self.encoder = models.make(encoder_name, **encoder_args)
+        self.encoder = build_model(encoder_name, **encoder_args)
         classifier_args['in_dim'] = self.encoder.out_dim
-        self.classifier = models.make(classifier_name, **classifier_args)
+        self.classifier = build_model(classifier_name, **classifier_args)
 
     def forward(self, x):
         feature = self.encoder(x)

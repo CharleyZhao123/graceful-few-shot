@@ -1,9 +1,8 @@
-from .models import make, load, register
-from .build_model import build_model
-from .backbone import resnet12
-from .classifier import LinearClassifier
-from .classifier import NNClassifier
-from .network import GBClassifyNetwork
-from .network import BasePretrainNetwork
-from .old_model import classifier
+from .model_init import build_model, model_register
+
+from .backbone import Resnet12
+from .classifier import LinearClassifier, NNClassifier
 from .component import DotAttention
+from .network import GBClassifyNetwork, BasePretrainNetwork
+
+from .old_model import Classifier

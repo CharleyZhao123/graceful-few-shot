@@ -10,10 +10,11 @@ import torch.nn.functional as F
 import numpy as np
 import scipy.stats
 from tqdm import tqdm
-from torch.utils.data import DataLoader
+from data import build_dataloader
 from sklearn.metrics import roc_auc_score
 
 import models
+from models.build_model import build_model
 import utils
 import utils.few_shot as fs
 
@@ -38,20 +39,14 @@ def main(config):
 
 
     # ===== 准备数据、模型 =====
-    if config.get('load') is None:
-        model = models.make('meta-baseline', encoder=None)
-    else:
-        model = models.load(torch.load(config['load']))
+    # dataloader
+    test_dataloader = build_dataloader(config['test_dataloader_args'])
 
-    if config.get('load_encoder') is not None:
-        encoder = models.load(torch.load(config['load_encoder'])).encoder
-        model.encoder = encoder
+    # model
+    encoder_model = build_model(config['network_args'])
+    utils.log('num params: {}'.format(utils.compute_n_params(encoder_model)))
 
-    if config.get('_parallel'):
-        model = nn.DataParallel(model)
-
-    model.eval()
-    utils.log('num params: {}'.format(utils.compute_n_params(model)))
+    encoder_model.eval()
 
     # testing
     aves_keys = ['vl', 'va']

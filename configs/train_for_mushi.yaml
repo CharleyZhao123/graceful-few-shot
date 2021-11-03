@@ -90,7 +90,7 @@ network_args:
       },
     model_load_para:
       {
-        load_official_backbone: /space1/zhaoqing/code/graceful-few-shot/models/backbone/pretrained/resnet18-f37072fd.pth,
+        load_pure_encoder: /space1/zhaoqing/code/graceful-few-shot/models/backbone/pretrained/resnet18-f37072fd.pth,
       },
   }
 

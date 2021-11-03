@@ -16,4 +16,15 @@ test_dataloader_args: {
     batch_size: 4
 }
 
-similarity_method: 'cos'  # 'cos', 'sqr'
+network_args:
+  {
+    model_name: resnet12,
+    model_args:
+      { 
+      },
+    model_load_para:
+      {
+        load_pure_encoder: /space1/zhaoqing/code/graceful-few-shot/models/backbone/pretrained/resnet18-f37072fd.pth,
+      },
+    similarity_method: cos  # 'cos', 'sqr'
+  }
