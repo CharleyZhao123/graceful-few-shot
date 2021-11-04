@@ -11,23 +11,26 @@ Multi-Query:
     拓展形式, 暂不考虑
 '''
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import sys
 sys.path.append('..')
 from models import model_register
 
-@model_register('dot_attention')
-class DotAttention(object):
+@model_register('dot-attention')
+class DotAttention(nn.Module):
     '''
     无参点积Attention
     '''
-    def __init__(self, dim=512, use_scaling=False, nor_type='softmax', **kargs):
+    def __init__(self, dim=512, use_scaling=False, similarity_method='cos', nor_type='l2_norm',**kargs):
+        super().__init__()
         self.dim = dim
         self.use_scaling = use_scaling
         self.scaling = torch.sqrt(torch.tensor(dim).float())
+        self.similarity_method = similarity_method
         self.nor_type = nor_type
     
-    def __call__(self, query, key):
+    def forward(self, query, key):
 
         # 整理tensor便于计算
         query_num = query.shape[1]
@@ -36,13 +39,20 @@ class DotAttention(object):
         query = query.unsqueeze(2).repeat(1, 1, way_num, 1).unsqueeze(-2)  # [T, Q, W, 1, dim]
 
         # 计算Query与Key的相似度
-        sim = torch.matmul(query, key.permute(0, 1, 2, 4, 3))  # [T, Q, W, 1, S]
+        if self.similarity_method == 'cos':
+            nor_query = F.normalize(query, dim=-1)
+            nor_key = F.normalize(key, dim=-1)
+            sim = torch.matmul(nor_query, nor_key.permute(0, 1, 2, 4, 3))  # [T, Q, W, 1, S]
+        else:
+            sim = torch.matmul(query, key.permute(0, 1, 2, 4, 3))  # [T, Q, W, 1, S]
 
         # 处理相似度
         if self.use_scaling:
             sim = sim / self.scaling
         if self.nor_type == 'softmax':
             sim = F.softmax(sim, dim=-1)
+        elif self.nor_type == 'l2_norm':
+            sim = F.normalize(sim, dim=-1)
         # print(sim[0, 0, 0, 0, :])
 
         # 加权(相似度)求和

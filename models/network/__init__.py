@@ -1,2 +1,3 @@
 from .base_pretrain_network import BasePretrainNetwork
 from .gb_classify_network import GBClassifyNetwork
+from .MVA_network import MVANetwork

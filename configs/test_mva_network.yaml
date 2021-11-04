@@ -3,34 +3,41 @@ test_dataloader_args: {
     dataset_args:
       {
         split: test,
-        augment: default
+        augment: default  # clip, default
       },
-    sampler_name: default-sampler,
-    batch_size: 67
+    sampler_name: metatasks-sampler,
+    sampler_args: 
+    {
+      batch_num: 500,
+      shot_num: 5,
+      way_num: 5,
+      query_num: 15
+    },
+    batch_size: 4
 }
 
-network_args: {
-  model_name: base-pretrain-network,
-  model_args: {
-      encoder_name: resnet12,
-      encoder_args: {},
-      classifier_name: nn-classifier,
-      classifier_args: {
-        class_num: 5
-      }
-  },
-  model_load_para: {
-    # load_encoder: /space1/zhaoqing/code/few_shot_meta_baseline/save/only_pre_train/nn/nn_continue/epoch-6.pth,  # 61.52
-  }
+network_args:
+  {
+    model_name: mva-network,  # resnet12, clip
+    model_args:
+      {
+        encoder_name: resnet12,
+        encoder_args: {},
+        encoder_load_para:
+          {
+            load_old_encoder: /space1/zhaoqing/code/few_shot_meta_baseline/save/pre_meta_2_stage/linear/metabasepre2/max-tva.pth,
+          },
+        mva_name: dot-attention,
+        mva_args: {},
+        task_info: {
+          batch_size: 4,
+          shot_num: 5,
+          way_num: 5,
+          query_num: 15
+        },
+        similarity_method: cos  # 'cos', 'sqr'
+      },
+    model_load_para: {},
 }
 
-trainer_args: {
-  optimizer_name: sgd,
-  optimizer_args: {
-    lr: 0.01,
-    weight_decay: 5.e-4
-  },
-  max_epoch: 100,
-  save_epoch: 1
-}
 

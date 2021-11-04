@@ -15,7 +15,7 @@ def model_register(name):
         return cls
     return decorator
 
-def build_model(model_name, model_args=None, model_load_para=None, **kwargs):
+def build_model(model_name, model_args={}, model_load_para={}, **kwargs):
     '''
     构建神经网络模型
     输入: 神经网络模型各参数

@@ -3,14 +3,14 @@ test_dataloader_args: {
     dataset_args:
       {
         split: test,
-        augment: clip  # clip, default
+        augment: default  # clip, default
       },
     sampler_name: metatasks-sampler,
     sampler_args: 
     {
-      batch_num: 200,
+      batch_num: 500,
       shot_num: 5,
-      way_num: 5,
+      way_num: 15,
       query_num: 15
     },
     batch_size: 4
@@ -18,7 +18,7 @@ test_dataloader_args: {
 
 network_args:
   {
-    model_name: clip,  # resnet12, clip
+    model_name: resnet12,  # resnet12, clip
     model_args:
       { 
       },

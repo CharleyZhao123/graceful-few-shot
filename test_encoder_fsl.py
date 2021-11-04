@@ -3,7 +3,6 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '7'
 import argparse
 import torch
 
-from data import dataloader_init
 import torch.nn.functional as F
 import numpy as np
 import yaml
