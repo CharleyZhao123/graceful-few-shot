@@ -28,7 +28,10 @@ class MVANetwork(nn.Module):
 
     def forward(self, image):
         # ===== 提取特征并整理 =====
-        feature = self.encoder(image)
+        if 'encode_image' in dir(self.encoder):
+            feature = self.encoder.encode_image(image)
+        else:
+            feature = self.encoder(image)
 
         # 划分特征
         # shot_feat: [T, W, S, dim]

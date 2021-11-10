@@ -10,41 +10,47 @@ Simple-Query:
 Multi-Query:
     拓展形式, 暂不考虑
 '''
+# from models import model_register
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import sys
 sys.path.append('..')
-from models import model_register
 
-@model_register('dot-attention')
+
+# @model_register('dot-attention')
 class DotAttention(nn.Module):
     '''
     无参点积Attention
     '''
-    def __init__(self, dim=512, use_scaling=False, similarity_method='cos', nor_type='l2_norm',**kargs):
+
+    def __init__(self, dim=512, use_scaling=False, similarity_method='cos', nor_type='l2_norm', **kargs):
         super().__init__()
         self.dim = dim
         self.use_scaling = use_scaling
         self.scaling = torch.sqrt(torch.tensor(dim).float())
         self.similarity_method = similarity_method
         self.nor_type = nor_type
-    
+
     def forward(self, query, key):
 
         # 整理tensor便于计算
         query_num = query.shape[1]
         way_num = key.shape[1]
-        key = key.unsqueeze(1).repeat(1, query_num, 1, 1, 1)  # [T, Q, W, S, dim]
-        query = query.unsqueeze(2).repeat(1, 1, way_num, 1).unsqueeze(-2)  # [T, Q, W, 1, dim]
+        key = key.unsqueeze(1).repeat(
+            1, query_num, 1, 1, 1)  # [T, Q, W, S, dim]
+        query = query.unsqueeze(2).repeat(
+            1, 1, way_num, 1).unsqueeze(-2)  # [T, Q, W, 1, dim]
 
         # 计算Query与Key的相似度
         if self.similarity_method == 'cos':
             nor_query = F.normalize(query, dim=-1)
             nor_key = F.normalize(key, dim=-1)
-            sim = torch.matmul(nor_query, nor_key.permute(0, 1, 2, 4, 3))  # [T, Q, W, 1, S]
+            sim = torch.matmul(nor_query, nor_key.permute(
+                0, 1, 2, 4, 3))  # [T, Q, W, 1, S]
         else:
-            sim = torch.matmul(query, key.permute(0, 1, 2, 4, 3))  # [T, Q, W, 1, S]
+            sim = torch.matmul(query, key.permute(
+                0, 1, 2, 4, 3))  # [T, Q, W, 1, S]
 
         # 处理相似度
         if self.use_scaling:
@@ -60,9 +66,76 @@ class DotAttention(nn.Module):
 
         return output
 
+
+class LinearTrans(nn.Module):
+    '''
+    线性变换类
+    '''
+    def __init__(self, dim=512, way_num=5, type='query'):
+        super(LinearTrans, self).__init__()
+        self.type = type
+        # 构建映射矩阵
+        if self.type == 'query':
+            self.weight = nn.Parameter(torch.eye(dim))  # [dim, dim]
+        else:  # key, value
+            eye_base = torch.eye(dim)
+            eye_repeat = eye_base.unsqueeze(0).repeat(way_num, 1, 1)
+            self.weight = nn.Parameter(eye_repeat) # [way_num, dim, dim]
+
+    def forward(self, in_feat):
+        if self.type == 'query':
+            # [1, Q, dim]
+            out_feat = torch.tensordot(in_feat, self.weight, dims=([2], [0]))
+        else:
+            # [1, W, S, dim]
+            out_feat = torch.matmul(in_feat, self.weight.unsqueeze(0))
+        return out_feat
+
+
+# @model_register('w-attention')
+class WAttention(nn.Module):
+    '''
+    含KQV映射矩阵的Attention
+    输入: Q: [1, Q, dim], K: [1, W, S, dim]
+    '''
+
+    def __init__(self, dim=512, use_scaling=False, similarity_method='cos',
+                 nor_type='l2_norm', way_num=15, query_num=15, **kargs):
+        super().__init__()
+        self.dim = dim
+        self.way_num = way_num
+        self.query_num = query_num
+
+        # 构建参数矩阵
+        self.query_trans = LinearTrans(self.dim, self.way_num, 'query')
+        self.key_trans = LinearTrans(self.dim, self.way_num, 'key')
+        self.value_trans = LinearTrans(self.dim, self.way_num, 'value')
+
+    def forward(self, query, key):
+        '''
+
+        '''
+        query_num = self.query_num
+        way_num = self.way_num
+
+        # 线性变换
+        new_query = self.query_trans(query)  # [T, Q, dim]
+        new_key = self.key_trans(key)  # [T, W, S, dim]
+        new_value = self.value_trans(key)  # [T, W, S, dim]
+        
+        if query.equal(new_query):
+            print('query == new_query')
+        if key.equal(new_key):
+            print('key == new_key')
+        if key.equal(new_value):
+            print('key == new_value')
+        
+        return 0
+
+
 if __name__ == '__main__':
     query = torch.rand((4, 75, 512))
-    key = torch.rand((4, 5, 5, 512))
-    dot_attention = DotAttention()
-    output = dot_attention(query, key)
-    print(output.shape)
+    key = torch.rand((4, 15, 5, 512))
+
+    w_attention = WAttention()
+    w_attention(query, key)

@@ -1,6 +1,4 @@
 import os
-
-import models
 os.environ['CUDA_VISIBLE_DEVICES'] = '7'
 import argparse
 import torch
