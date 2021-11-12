@@ -28,7 +28,9 @@ network_args:
             load_old_encoder: /space1/zhaoqing/code/few_shot_meta_baseline/save/pre_meta_2_stage/linear/metabasepre2/max-tva.pth,
           },
         mva_name: dot-attention,
-        mva_args: {},
+        mva_args: {
+          update: False
+        },
         task_info: {
           batch_size: 4,
           shot_num: 5,
