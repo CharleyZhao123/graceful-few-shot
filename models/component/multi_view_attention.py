@@ -14,6 +14,7 @@ Multi-Query:
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import random
 import sys
 sys.path.append('..')
 
@@ -110,6 +111,68 @@ class WAttention(nn.Module):
         self.query_trans = LinearTrans(self.dim, self.way_num, 'query')
         self.key_trans = LinearTrans(self.dim, self.way_num, 'key')
         self.value_trans = LinearTrans(self.dim, self.way_num, 'value')
+    
+    def feature_augmentation(self, feat, aug_type='none'):
+        if aug_type == 'none':
+            return feat
+    
+    def build_fake_trainset(self, key, choice_type='random', choice_num=1, aug_type='none', epoch=0):
+        '''
+        利用support set数据(key)构建假训练集
+        输入: key: [1, W, S, dim]
+        输出: 
+            fkey: [1, W, S, dim]
+            fquery: [1, Q, dim]
+            flabel: [1, Q, W]
+            Q = W x choice_num
+        '''
+        # 准备
+        way_num = key.shape[1]
+        shot_num = key.shape[2]
+        dim = key.shape[3]
+
+        fquery = []
+        fkey = key.clone().detach()
+        flabel = []
+
+        # 生成筛选数据索引
+        if choice_type == 'random':
+            choice_id_list = []
+            for w in range(way_num):
+                random.seed(epoch+w)
+                w_choice_id_list = random.sample(range(0, shot_num), choice_num)
+                choice_id_list.append(w_choice_id_list)  # [[...], [], ...]
+
+        # 根据choice_id_list构建假训练集
+        for w_index, w_choice_id_list in enumerate(choice_id_list):
+            for s_index in w_choice_id_list:
+                # print(w_index, ' ', s_index)
+                # 得到用作query的key特征
+                query_feat = fkey[0, w_index, s_index, :].clone().detach()
+                fquery.append(query_feat)
+
+                # 构建label
+                query_label = [0]*way_num
+                query_label[w_index] = 1
+                flabel.append(torch.tensor(query_label, dtype=torch.int))
+
+                # 增强对应的原key特征
+                aug_feat = self.feature_augmentation(query_feat, aug_type)
+                fkey[0, w_index, s_index, :] = aug_feat
+        
+        fquery = torch.stack(fquery, dim=0).unsqueeze(0)
+        flabel = torch.stack(flabel, dim=0).unsqueeze(0)
+
+        return fkey, fquery, flabel
+
+    def train_trans_weight(self, key):
+        '''
+        使用support set数据(key)训练变换模块
+        '''
+        fkey, fquery, flabel = self.build_fake_trainset(key)
+
+        
+        pass
 
     def forward(self, query, key):
         '''
@@ -119,9 +182,9 @@ class WAttention(nn.Module):
         way_num = self.way_num
 
         # 线性变换
-        new_query = self.query_trans(query)  # [T, Q, dim]
-        new_key = self.key_trans(key)  # [T, W, S, dim]
-        new_value = self.value_trans(key)  # [T, W, S, dim]
+        new_query = self.query_trans(query)  # [1, Q, dim]
+        new_key = self.key_trans(key)  # [1, W, S, dim]
+        new_value = self.value_trans(key)  # [1, W, S, dim]
         
         if query.equal(new_query):
             print('query == new_query')
@@ -130,6 +193,7 @@ class WAttention(nn.Module):
         if key.equal(new_value):
             print('key == new_value')
         
+        self.train_trans_weight(key)
         return 0
 
 
