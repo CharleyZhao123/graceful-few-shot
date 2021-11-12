@@ -10,7 +10,7 @@ Simple-Query:
 Multi-Query:
     拓展形式, 暂不考虑
 '''
-# from models import model_register
+from models import model_register
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -19,7 +19,7 @@ import sys
 sys.path.append('..')
 
 
-# @model_register('dot-attention')
+@model_register('dot-attention')
 class DotAttention(nn.Module):
     '''
     无参点积Attention
@@ -94,7 +94,7 @@ class LinearTrans(nn.Module):
         return out_feat
 
 
-# @model_register('w-attention')
+@model_register('w-attention')
 class WAttention(nn.Module):
     '''
     含KQV映射矩阵的Attention

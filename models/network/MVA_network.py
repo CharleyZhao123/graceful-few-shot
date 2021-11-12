@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import random
 
 from models import model_register, build_model
+import utils
 import utils.few_shot as fs
 
 
@@ -52,14 +53,14 @@ class MVANetwork(nn.Module):
         if aug_type == 'none':
             return feat
 
-    def build_fake_trainset(self, key, choice_type='random', choice_num=1, aug_type='none', epoch=0):
+    def build_fake_trainset(self, key, choice_type='random', choice_num=3, aug_type='none', epoch=0):
         '''
         利用support set数据(key)构建假训练集
         输入: key: [1, W, S, dim]
         输出:
             fkey: [1, W, S, dim]
             fquery: [1, Q, dim]
-            flabel: [1, Q, W]
+            flabel: [Q, W]
             Q = W x choice_num
         '''
         # 准备
@@ -89,36 +90,43 @@ class MVANetwork(nn.Module):
                 fquery.append(query_feat)
 
                 # 构建label
-                query_label = [0]*way_num
-                query_label[w_index] = 1
-                flabel.append(torch.tensor(query_label, dtype=torch.int))
+                query_label = w_index
+                flabel.append(query_label)
 
                 # 增强对应的原key特征
                 aug_feat = self.feature_augmentation(query_feat, aug_type)
                 fkey[0, w_index, s_index, :] = aug_feat
 
-        fquery = torch.stack(fquery, dim=0).unsqueeze(0)
-        flabel = torch.stack(flabel, dim=0).unsqueeze(0)
+        fquery = torch.stack(fquery, dim=0).unsqueeze(0).cuda()
+        flabel = torch.tensor(flabel, dtype=torch.long).cuda()
 
         return fkey, fquery, flabel
 
     def train_mva(self, key, epoch_num=10):
         '''
-        使用support set数据(key)训练变换模块
+        使用support set数据(key)训练mva
         '''
-        optimizer = torch.optim.SGD(self.mva.parameters(), lr=1e-4,
+        optimizer = torch.optim.SGD(self.mva.parameters(), lr=1e-1,
                                     momentum=0.9, dampening=0.9, weight_decay=0)
-
         with torch.enable_grad():
             for epoch in range(1, epoch_num+1):
                 fkey, fquery, flabel = self.build_fake_trainset(
-                    key, epoch=epoch)
-                # 线性变换
-                new_fquery = self.query_trans(fquery)  # [1, Q, dim]
-                new_fkey = self.key_trans(fkey)  # [1, W, S, dim]
-                new_fvalue = self.value_trans(fkey)  # [1, W, S, dim]
+                    key, choice_num=3, epoch=epoch)
 
-        pass
+                optimizer.zero_grad()
+
+                proto_feat = self.mva(fquery, fkey)
+                logits = self.get_logits(proto_feat, fquery)
+                loss = F.cross_entropy(logits, flabel)
+                acc = utils.compute_acc(logits, flabel)
+
+                loss.backward()
+                optimizer.step()
+
+                print('mva train epoch: {} acc={:.2f} loss={:.2f}'.format(epoch, acc, loss))
+        
+        print("mva train done.")
+
 
     def forward(self, image):
         # ===== 提取特征并整理 =====
@@ -139,8 +147,7 @@ class MVANetwork(nn.Module):
         
         # ===== 将特征送入MVA进行计算 =====
         # proto_feat: [T, Q, W, dim]
-        if self.mva_name == 'dot-attention':
-            proto_feat = self.mva(query_feat, shot_feat)
+        proto_feat = self.mva(query_feat, shot_feat)
 
         # ===== 得到最终的分类logits =====
         logits = self.get_logits(proto_feat, query_feat)

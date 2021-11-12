@@ -39,6 +39,16 @@ def main(config):
     # model
     network_args = config['network_args']
     model = build_model(network_args['model_name'], network_args['model_args'])
+
+    # 准备备用mva model, 保证每个task都是初始的mva, 不受之前的影响
+    mva_name = network_args['model_args']['mva_name']
+    mva_args = network_args['model_args']['mva_args']
+    if mva_args.get('update'):
+        update_mva = mva_args['update']
+    else:
+        update_mva = False
+    origin_mva_model = build_model(mva_name, mva_args)
+
     utils.log('num params: {}'.format(utils.compute_n_params(model)))
 
     # task信息
@@ -65,6 +75,10 @@ def main(config):
         for image, _, _ in tqdm(test_dataloader, leave=False):
             image = image.cuda()  # [320, 3, 224, 224]
 
+            # 重载mva参数
+            if update_mva:
+                model.mva.load_state_dict(origin_mva_model.state_dict())
+            
             with torch.no_grad():
                 # [320, 5]: 320 = 4 x (5 x (1 + 15))
                 logits = model(image)
