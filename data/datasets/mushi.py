@@ -27,7 +27,8 @@ name2label = {
 
 @dataset_register('mushi')
 class Mushi(Dataset):
-    def __init__(self, root_path, split='train', augment='default', type='sim_data', shot_num=70, query_num=15, **kwargs):
+    def __init__(self, root_path, split='train', augment='default',
+                 type='sim_data', shot_num=70, query_num=15, return_items=2, **kwargs):
 
         self.root_path = root_path
         self.split = split
@@ -74,6 +75,9 @@ class Mushi(Dataset):
             std = torch.tensor(norm_params['std']).view(3, 1, 1).type_as(x)
             return x * std + mean
         self.convert_raw = convert_raw
+
+        # 其他
+        self.return_items = return_items
 
     def get_sim_data(self, shot_num, query_num):
         '''
@@ -146,7 +150,7 @@ class Mushi(Dataset):
             c_floder_path = os.path.join(true_floder_path, c)
             c_image_list = os.listdir(c_floder_path)
 
-            c_image_list.sort(key = lambda x: int(x[:-4]))
+            c_image_list.sort(key=lambda x: int(x[:-4]))
             # print(c_image_list)
             # 处理image path
             c_image_list = [os.path.join('true', c, p) for p in c_image_list]
@@ -214,11 +218,16 @@ class Mushi(Dataset):
         image_path = os.path.join(self.root_path, image_path)
         # print(image_path)
         image = Image.open(image_path).convert('RGB')
-        return self.transform(image), self.label[index]
+
+        if self.return_items == 3:
+            fake_data = 'fake_name'
+            return self.transform(image), self.label[index], fake_data
+        else:
+            return self.transform(image), self.label[index]
 
 
 if __name__ == '__main__':
-    mushi = MushiSIM(
+    mushi = Mushi(
         root_path='/space1/zhaoqing/dataset/fsl/mushi', split='val', type='true_data')
     print(mushi.__getitem__(0))
     # sim: train: 402, val: 178;

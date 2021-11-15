@@ -52,6 +52,9 @@ class MVANetwork(nn.Module):
         '''
         if aug_type == 'none':
             return feat
+        elif aug_type == 'zero':
+            zero_feat = torch.zeros_like(feat)
+            return zero_feat
 
     def build_fake_trainset(self, key, choice_type='random', choice_num=3, aug_type='none', epoch=0):
         '''
@@ -102,16 +105,16 @@ class MVANetwork(nn.Module):
 
         return fkey, fquery, flabel
 
-    def train_mva(self, key, epoch_num=10):
+    def train_mva(self, key, epoch_num=30):
         '''
         使用support set数据(key)训练mva
         '''
-        optimizer = torch.optim.SGD(self.mva.parameters(), lr=1e-1,
+        optimizer = torch.optim.SGD(self.mva.parameters(), lr=1e-3,
                                     momentum=0.9, dampening=0.9, weight_decay=0)
         with torch.enable_grad():
             for epoch in range(1, epoch_num+1):
                 fkey, fquery, flabel = self.build_fake_trainset(
-                    key, choice_num=3, epoch=epoch)
+                    key, choice_num=1, aug_type='zero', epoch=epoch)
 
                 optimizer.zero_grad()
 
