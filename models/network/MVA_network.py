@@ -134,7 +134,7 @@ class MVANetwork(nn.Module):
     def forward(self, image):
         # ===== 提取特征并整理 =====
         if 'encode_image' in dir(self.encoder):
-            feature = self.encoder.encode_image(image)
+            feature = self.encoder.encode_image(image).float()
         else:
             feature = self.encoder(image)
 

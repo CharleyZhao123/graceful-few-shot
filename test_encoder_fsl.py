@@ -68,7 +68,7 @@ def main(config):
             with torch.no_grad():
                 # [320, 512]: 320 = 4 x (5 x (1 + 15))
                 if 'encode_image' in dir(model):
-                    image_feature = model.encode_image(image)
+                    image_feature = model.encode_image(image).float()
                 else:
                     image_feature = model(image)
 
