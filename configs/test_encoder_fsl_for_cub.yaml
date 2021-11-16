@@ -1,0 +1,32 @@
+test_dataloader_args: {
+    dataset_name: cub,
+    dataset_args:
+      {
+        split: test,
+        augment: default,  # clip, default
+        return_items: 3
+      },
+    sampler_name: metatasks-sampler,
+    sampler_args: 
+    {
+      batch_num: 2000,
+      shot_num: 5,
+      way_num: 5,
+      query_num: 15
+    },
+    batch_size: 1
+}
+
+network_args:
+  {
+    model_name: resnet12,  # resnet12, clip
+    model_args:
+      { 
+      },
+    model_load_para:
+      {
+        load_old_encoder: /space1/zhaoqing/code/few_shot_meta_baseline/save/pre_meta_2_stage/linear/metabasepre2/max-tva.pth,
+      },
+}
+
+similarity_method: cos  # 'cos', 'sqr'

@@ -109,12 +109,12 @@ class MVANetwork(nn.Module):
         '''
         使用support set数据(key)训练mva
         '''
-        optimizer = torch.optim.SGD(self.mva.parameters(), lr=1e-3,
+        optimizer = torch.optim.SGD(self.mva.parameters(), lr=1e-2,
                                     momentum=0.9, dampening=0.9, weight_decay=0)
         with torch.enable_grad():
             for epoch in range(1, epoch_num+1):
                 fkey, fquery, flabel = self.build_fake_trainset(
-                    key, choice_num=1, aug_type='zero', epoch=epoch)
+                    key, choice_num=1, aug_type='none', epoch=epoch)
 
                 optimizer.zero_grad()
 

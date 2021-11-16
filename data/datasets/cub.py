@@ -15,7 +15,7 @@ from .datasets import dataset_register
 @dataset_register('cub')
 class CUB(Dataset):
 
-    def __init__(self, root_path, split='train', **kwargs):
+    def __init__(self, root_path, split='train', return_items=2, **kwargs):
         split_file = '{}.csv'.format(split)
         IMAGE_PATH = os.path.join(root_path)
         SPLIT_PATH = os.path.join(root_path, 'split', split_file)
@@ -81,6 +81,9 @@ class CUB(Dataset):
 
         else:
             self.transform = self.default_transform
+        
+        # 其他
+        self.return_items = return_items
 
 
     def __len__(self):
@@ -89,4 +92,8 @@ class CUB(Dataset):
     def __getitem__(self, i):
         path, label = self.data[i], self.label[i]
         image = self.transform(Image.open(path).convert('RGB'))
-        return image, label
+        
+        if self.return_items == 3:
+            return image, label, 'fake_name'
+        else:
+            return image, label

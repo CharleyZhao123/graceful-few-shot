@@ -1,0 +1,46 @@
+test_dataloader_args: {
+    dataset_name: cub,
+    dataset_args:
+      {
+        split: test,
+        augment: default,  # clip, default
+        return_items: 3
+      },
+    sampler_name: metatasks-sampler,
+    sampler_args: 
+    {
+      batch_num: 2000,  # 500
+      shot_num: 5,
+      way_num: 5,
+      query_num: 15
+    },
+    batch_size: 1  # 4
+}
+
+network_args:
+  {
+    model_name: mva-network,
+    model_args:
+      {
+        encoder_name: resnet12,  # resnet12, clip
+        encoder_args: {},
+        encoder_load_para:
+          {
+            load_old_encoder: /space1/zhaoqing/code/few_shot_meta_baseline/save/pre_meta_2_stage/linear/metabasepre2/max-tva.pth,
+          },
+        mva_name: w-attention,
+        mva_args: {
+          update: True
+        },
+        task_info: {
+          batch_size: 1,
+          shot_num: 5,
+          way_num: 5,
+          query_num: 15
+        },
+        similarity_method: cos  # 'cos', 'sqr'
+      },
+    model_load_para: {},
+}
+
+
