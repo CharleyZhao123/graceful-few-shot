@@ -46,15 +46,38 @@ class MVANetwork(nn.Module):
         logits = logits.squeeze(-2).view(-1, self.way_num)
         return logits
 
-    def feature_augmentation(self, feat, aug_type='none'):
+    def feature_augmentation(self, fkey, w_index, s_index, aug_type='none'):
         '''
         对特征进行增强
         '''
         if aug_type == 'none':
-            return feat
+            query_feat = fkey[0, w_index, s_index, :].clone().detach()
+            return query_feat
         elif aug_type == 'zero':
-            zero_feat = torch.zeros_like(feat)
+            query_feat = fkey[0, w_index, s_index, :].clone().detach()
+            zero_feat = torch.zeros_like(query_feat)
             return zero_feat
+        elif aug_type == 'random':
+            query_feat = fkey[0, w_index, s_index, :].clone().detach()
+            random_mask = torch.randn_like(query_feat).cuda()
+            random_feat = query_feat + random_mask * 0.07
+            return random_feat
+        elif aug_type == 'way_mean':
+            way_feat = fkey[0, w_index, :, :].clone().detach()  # [W, dim]
+            way_mean_feat = torch.mean(way_feat, dim=0)
+            return way_mean_feat
+        elif aug_type == 'way_other_mean':
+            way_feat = fkey[0, w_index, :, :].clone().detach()  # [W, dim]
+
+            index = [i for i in range(self.shot_num)]
+            index.remove(s_index)
+            index = torch.tensor(index, dtype=torch.long).cuda()
+
+            way_other_feat = torch.index_select(way_feat, 0, index)
+            way_other_mean_feat = way_other_feat.mean(dim=0)
+            return way_other_mean_feat
+
+
 
     def build_fake_trainset(self, key, choice_type='random', choice_num=3, aug_type='none', epoch=0):
         '''
@@ -97,7 +120,7 @@ class MVANetwork(nn.Module):
                 flabel.append(query_label)
 
                 # 增强对应的原key特征
-                aug_feat = self.feature_augmentation(query_feat, aug_type)
+                aug_feat = self.feature_augmentation(fkey, w_index, s_index, aug_type)
                 fkey[0, w_index, s_index, :] = aug_feat
 
         fquery = torch.stack(fquery, dim=0).unsqueeze(0).cuda()
@@ -105,28 +128,69 @@ class MVANetwork(nn.Module):
 
         return fkey, fquery, flabel
 
-    def train_mva(self, key, epoch_num=30):
+    def train_mva(self, key, epoch_num=30, enhance_threshold=0.0, enhance_top=10):
         '''
         使用support set数据(key)训练mva
+        epoch_num: 正常训练的epoch次数, 每个epoch构建的tasks是不同的, 有难有易
+        enhance_threshold: 判断是否需要对该epoch增强的阈值, 如果acc小于该阈值, 则增强
+        enhance_top: 增强次数上限, 最多增强该次数(包含)
         '''
-        optimizer = torch.optim.SGD(self.mva.parameters(), lr=1e-2,
+        # 关键超参
+        aug_type = 'way_other_mean'
+        choice_num = 1
+        lr = 1e-1
+
+        # 优化器
+        optimizer = torch.optim.SGD(self.mva.parameters(), lr=lr,
                                     momentum=0.9, dampening=0.9, weight_decay=0)
+
+        # 训练
         with torch.enable_grad():
-            for epoch in range(1, epoch_num+1):
-                fkey, fquery, flabel = self.build_fake_trainset(
-                    key, choice_num=1, aug_type='none', epoch=epoch)
+            if enhance_threshold == 0.0:
+                for epoch in range(1, epoch_num+1):
+                    fkey, fquery, flabel = self.build_fake_trainset(
+                        key, choice_num=choice_num, aug_type=aug_type, epoch=epoch)
 
-                optimizer.zero_grad()
+                    optimizer.zero_grad()
 
-                proto_feat = self.mva(fquery, fkey)
-                logits = self.get_logits(proto_feat, fquery)
-                loss = F.cross_entropy(logits, flabel)
-                acc = utils.compute_acc(logits, flabel)
+                    proto_feat = self.mva(fquery, fkey)
+                    logits = self.get_logits(proto_feat, fquery)
+                    loss = F.cross_entropy(logits, flabel)
+                    acc = utils.compute_acc(logits, flabel)
 
-                loss.backward()
-                optimizer.step()
+                    loss.backward()
+                    optimizer.step()
 
-                print('mva train epoch: {} acc={:.2f} loss={:.2f}'.format(epoch, acc, loss))
+                    print('mva train epoch: {} acc={:.2f} loss={:.2f}'.format(epoch, acc, loss))
+            else:
+                epoch = 1
+                enhance_num = 0
+                while epoch < epoch_num + 1:
+                    fkey, fquery, flabel = self.build_fake_trainset(
+                        key, choice_num=choice_num, aug_type=aug_type, epoch=epoch)
+
+                    optimizer.zero_grad()
+
+                    proto_feat = self.mva(fquery, fkey)
+                    logits = self.get_logits(proto_feat, fquery)
+                    loss = F.cross_entropy(logits, flabel)
+                    acc = utils.compute_acc(logits, flabel)
+
+                    loss.backward()
+                    optimizer.step()
+
+                    print('mva train epoch: {} acc={:.2f} loss={:.2f}'.format(epoch, acc, loss))
+
+                    if acc < enhance_threshold:
+                        enhance_num += 1
+                        if enhance_num > enhance_top:
+                            enhance_num = 0
+                            epoch += 1
+                        else:
+                            print('mva train epoch enhance time: {}'.format(enhance_num))
+                    else:
+                        enhance_num = 0
+                        epoch += 1
         
         print("mva train done.")
 
@@ -146,7 +210,7 @@ class MVANetwork(nn.Module):
 
         # ===== MVA训练 =====
         if self.mva_update:
-            self.train_mva(key=shot_feat, epoch_num=10)
+            self.train_mva(key=shot_feat, epoch_num=30, enhance_threshold=0.0, enhance_top=10)
         
         # ===== 将特征送入MVA进行计算 =====
         # proto_feat: [T, Q, W, dim]

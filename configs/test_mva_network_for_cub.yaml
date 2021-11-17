@@ -3,7 +3,7 @@ test_dataloader_args: {
     dataset_args:
       {
         split: test,
-        augment: default,  # clip, default
+        augment: clip,  # clip, default
         return_items: 3
       },
     sampler_name: metatasks-sampler,
@@ -22,7 +22,7 @@ network_args:
     model_name: mva-network,
     model_args:
       {
-        encoder_name: resnet12,  # resnet12, clip
+        encoder_name: clip,  # resnet12, clip
         encoder_args: {},
         encoder_load_para:
           {

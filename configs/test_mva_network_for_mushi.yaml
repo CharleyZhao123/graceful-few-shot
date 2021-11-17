@@ -4,7 +4,7 @@ test_dataloader_args: {
       {
         split: val,
         augment: clip,  # clip, default
-        type: sim_data,
+        type: true_data,  # sim_data
         shot_num: 0,
         query_num: 100,  # 所有数据作为测试集, 即: 共5类, 每类100张图像
         return_items: 3  # 返回三个值, 匹配mva测试
@@ -31,9 +31,9 @@ network_args:
           {
             load_old_encoder: /space1/zhaoqing/code/few_shot_meta_baseline/save/pre_meta_2_stage/linear/metabasepre2/max-tva.pth,
           },
-        mva_name: dot-attention,  # w-attention
+        mva_name: w-attention,  # w-attention
         mva_args: {
-          update: False  # True
+          update: True  # True
         },
         task_info: {
           batch_size: 1,

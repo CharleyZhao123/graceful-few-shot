@@ -3,8 +3,8 @@ test_dataloader_args: {
     dataset_args:
       {
         split: val,
-        augment: clip,  # clip, default
-        type: sim_data,
+        augment: default,  # clip, default
+        type: true_data,
         shot_num: 0,
         query_num: 100,  # 所有数据作为测试集, 即: 共5类, 每类100张图像
         return_items: 3  # 返回三个值, 匹配mva测试
@@ -22,9 +22,9 @@ test_dataloader_args: {
 
 network_args:
   {
-    model_name: clip,  # resnet12, clip
+    model_name: resnet12,  # resnet12, clip
     model_args:
-      { 
+      {
       },
     model_load_para:
       {

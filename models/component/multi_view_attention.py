@@ -87,7 +87,7 @@ class LinearTrans(nn.Module):
     def forward(self, in_feat):
         if self.type == 'query':
             # [1, Q, dim]
-            print(self.weight[0, 1])
+            # print(self.weight[0, 1])
             out_feat = torch.tensordot(in_feat, self.weight, dims=([2], [0]))
         else:
             # [1, W, S, dim]
