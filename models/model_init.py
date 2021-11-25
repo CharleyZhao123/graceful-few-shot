@@ -49,7 +49,7 @@ def build_model(model_name, model_args={}, model_load_para={}, **kwargs):
 
     if model_load_para.get('load_pure_encoder'):
         encoder_para = torch.load(model_load_para['load_pure_encoder'])
-        model.encoder.load_state_dict(encoder_para)
+        model.load_state_dict(encoder_para)
     
     # 加载旧工程中的参数
     if model_load_para.get('load_old_encoder'):

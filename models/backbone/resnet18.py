@@ -185,7 +185,7 @@ class ResNet(nn.Module):
 
 
 @model_register('resnet18')
-def resnet18(**kwargs):
+def Resnet18(**kwargs):
     """Constructs a ResNet-18 model."""
     model = ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
     return model
@@ -194,7 +194,7 @@ def resnet18(**kwargs):
 if __name__ == "__main__":
     import torch
 
-    model = resnet18().cuda()
+    model = Resnet18().cuda()
     data = torch.rand(10, 3, 84, 84).cuda()
     output = model(data)
     print(output.size())

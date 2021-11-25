@@ -3,7 +3,7 @@ import argparse
 import utils
 utils.set_gpu('0')
 import torch
-from models.build_model import build_model
+from models import build_model
 
 from data import build_dataloader
 import torch.nn.functional as F
@@ -49,7 +49,8 @@ def main(config):
     true_val_dataloader = build_dataloader(config['true_val_dataloader_args'])
 
     # model
-    pretrain_model = build_model(config['network_args'])
+    network_args = config['network_args']
+    pretrain_model = build_model(network_args['model_name'], network_args['model_args'])
     utils.log('num params: {}'.format(utils.compute_n_params(pretrain_model)))
 
     # ===== 训练 =====
