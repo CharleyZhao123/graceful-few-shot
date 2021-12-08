@@ -62,8 +62,8 @@ class Mushi(Dataset):
             ])
         elif augment == 'resize':
             self.transform = transforms.Compose([
-                transforms.Resize(image_size),
-                transforms.RandomCrop(image_size, padding=8),
+                transforms.Resize([image_size, image_size]),  # transforms.Resize(image_size)
+                # transforms.RandomCrop(image_size, padding=8),
                 transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
                 normalize,

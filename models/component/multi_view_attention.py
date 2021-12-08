@@ -73,25 +73,53 @@ class LinearTrans(nn.Module):
     线性变换类
     '''
 
-    def __init__(self, dim=512, way_num=5, type='query'):
+    def __init__(self, dim=512, way_num=5, out_type='query', w_type='eye_add'):
+        '''
+            w_type:
+                eye_dafault: w矩阵为一个对角阵, 全部参数可优化
+                eye_add: w矩阵为两个矩阵相加得到, 初始为对角阵, 加上的初始为全0的矩阵可优化
+        '''
         super(LinearTrans, self).__init__()
-        self.type = type
+        self.out_type = out_type
+        self.w_type = w_type
+
+        self.dim = dim
+        self.way_num = way_num
+
         # 构建映射矩阵
-        if self.type == 'query':
-            self.weight = nn.Parameter(torch.eye(dim))  # [dim, dim]
+        if self.out_type == 'query':
+            if self.w_type == 'eye_add':
+                self.weight = nn.Parameter(torch.zeros((dim, dim)))
+            else:  # eye_default
+                eye_base = torch.eye(dim)
+                self.weight = nn.Parameter(eye_base)  # [dim, dim]
         else:  # key, value
-            eye_base = torch.eye(dim)
-            eye_repeat = eye_base.unsqueeze(0).repeat(way_num, 1, 1)
-            self.weight = nn.Parameter(eye_repeat)  # [way_num, dim, dim]
+            if self.w_type == 'eye_add':
+                self.weight = nn.Parameter(torch.zeros(way_num, dim, dim))
+            else:  # eye_default
+                eye_base = torch.eye(dim)
+                eye_repeat = eye_base.unsqueeze(0).repeat(way_num, 1, 1)
+                self.weight = nn.Parameter(eye_repeat)  # [way_num, dim, dim]
 
     def forward(self, in_feat):
-        if self.type == 'query':
+        output_weight = self.weight
+        
+        if self.out_type == 'query':
             # [1, Q, dim]
             # print(self.weight[0, 1])
-            out_feat = torch.tensordot(in_feat, self.weight, dims=([2], [0]))
+            if self.w_type == 'eye_add':
+                output_weight = output_weight + torch.eye(self.dim).cuda()
+
+            out_feat = torch.tensordot(in_feat, output_weight, dims=([2], [0]))
         else:
             # [1, W, S, dim]
-            out_feat = torch.matmul(in_feat, self.weight.unsqueeze(0))
+            if self.w_type == 'eye_add':
+                eye_base = torch.eye(self.dim)
+                eye_repeat = eye_base.unsqueeze(0).repeat(self.way_num, 1, 1)
+                output_weight = output_weight + eye_repeat.cuda()
+
+            out_feat = torch.matmul(in_feat, output_weight.unsqueeze(0))
+        
         return out_feat
 
 
@@ -103,7 +131,7 @@ class WAttention(nn.Module):
     '''
 
     def __init__(self, dim=512, use_scaling=False, similarity_method='cos',
-                 nor_type='l2_norm', way_num=5, **kargs):
+                 nor_type='l2_norm', way_num=5, w_type='add', **kargs):
         super().__init__()
         self.dim = dim
         self.use_scaling = use_scaling
@@ -114,9 +142,9 @@ class WAttention(nn.Module):
         self.way_num = way_num
 
         # 构建参数矩阵
-        self.query_trans = LinearTrans(self.dim, self.way_num, 'query')
-        self.key_trans = LinearTrans(self.dim, self.way_num, 'key')
-        self.value_trans = LinearTrans(self.dim, self.way_num, 'value')
+        self.query_trans = LinearTrans(self.dim, self.way_num, 'query', w_type)
+        self.key_trans = LinearTrans(self.dim, self.way_num, 'key', w_type)
+        self.value_trans = LinearTrans(self.dim, self.way_num, 'value', w_type)
 
     def forward(self, query, key):
         # ===== 准备 =====

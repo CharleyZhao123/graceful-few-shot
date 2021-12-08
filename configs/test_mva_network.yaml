@@ -29,7 +29,8 @@ network_args:
           },
         mva_name: w-attention,
         mva_args: {
-          update: True
+          update: True,
+          w_type: eye_add
         },
         task_info: {
           batch_size: 1,
