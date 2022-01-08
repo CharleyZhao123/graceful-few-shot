@@ -8,28 +8,32 @@ import utils
 import utils.few_shot as fs
 
 
-@model_register('mva-network')
-class MVANetwork(nn.Module):
+@model_register('patch-mva-network')
+class PatchMVANetwork(nn.Module):
     def __init__(self, encoder_name='resnet12', encoder_args={}, encoder_load_para={},
                  mva_name='dot-attention', mva_args={'update': False}, mva_load_para={}, task_info={},
-                 similarity_method='cos'):
+                 similarity_method='cos', patch_mode='default'):
         super().__init__()
-        # 子模块构建
+        # ===== 子模块构建 =====
         self.encoder = build_model(
             encoder_name, encoder_args, encoder_load_para)
         self.mva = build_model(mva_name, mva_args, mva_load_para)
 
-        # 任务信息获得
+        # ===== 任务信息获得 =====
         self.batch_size = task_info['batch_size']
         self.shot_num = task_info['shot_num']
         self.way_num = task_info['way_num']
         self.query_num = task_info['query_num']
 
-        # Patch模式信息
-        self.patch_flag = False
-        self.patch_num = 0
+        # ===== Patch模式信息 =====
+        # patch_mode: 
+        # default: 当做对Support的数据增强看待
+        self.patch_mode = patch_mode
 
-        # 其他
+        # patch_num: Patch的数量, 为图像Patch维度, 第0个图像为原图
+        self.patch_num = 1
+
+        # ===== 其他 =====
         self.similarity_method = similarity_method
         self.mva_name = mva_name
         self.mva_update = mva_args['update']
@@ -71,9 +75,11 @@ class MVANetwork(nn.Module):
             way_mean_feat = torch.mean(way_feat, dim=0)
             return way_mean_feat
         elif aug_type == 'way_other_mean':
+            shot_num = fkey.shape[2]
+
             way_feat = fkey[0, w_index, :, :].clone().detach()  # [W, dim]
 
-            index = [i for i in range(self.shot_num)]
+            index = [i for i in range(shot_num)]
             index.remove(s_index)
             index = torch.tensor(index, dtype=torch.long).cuda()
 
@@ -213,15 +219,12 @@ class MVANetwork(nn.Module):
 
     def forward(self, image):
 
-        # ===== 判断是否为Patch模式 =====
         # Patch image shape: [320, 10, 3, 80, 80]
-        if len(image.shape) == 5:
-            self.patch_flag = True
-            self.patch_num = image.shape[1] - 1
-            image_num = image.shape[0]
+        self.patch_num = image.shape[1]
+        image_num = image.shape[0]
 
-            # [320x10, 3, 80, 80]
-            image = image.reshape(-1, image.shape[2], image.shape[3], image.shape[4])
+        # [320x10, 3, 80, 80]
+        image = image.reshape(-1, image.shape[2], image.shape[3], image.shape[4])
         
         # ===== 提取特征 =====
         if 'encode_image' in dir(self.encoder):
@@ -230,14 +233,26 @@ class MVANetwork(nn.Module):
             feature = self.encoder(image)
 
         # ===== 整理, 划分特征 =====
-        # 非Patch模式: shot_feat: [T, W, S, dim], query_feat: [T, Q, dim]
-        # Patch模式: shot_feat: [T, W, S, P, dim], query_feat: [T, Q, P, dim], P: patch_num + 1
-        if self.patch_flag:
-            feature = feature.reshape(image_num, self.patch_num+1, feature.shape[1])  # [320, 10, 512]
+        feat_dim = feature.shape[-1]
+        feature = feature.reshape(image_num, self.patch_num, feat_dim)  # [320, 10, 512]
 
+        # shot_feat: [T, W, S, P, dim], query_feat: [T, Q, P, dim], P: patch_num
         shot_feat, query_feat = fs.split_shot_query(
             feature, self.way_num, self.shot_num, self.query_num, self.batch_size)
         
+        # 根据patch_mode整理特征
+        # 'default': qurey取原图特征, support将Patch看作数据增广
+
+        if self.patch_mode == 'default':
+            new_shot_num = self.shot_num * self.patch_num
+            # 相当于将S shot变换为SxP shot: [T, W, S, P, dim] -> [T, W, SxP, dim]
+            shot_feat = shot_feat.reshape(self.batch_size, self.way_num, new_shot_num, feat_dim)
+            # [T, Q, P, dim] -> [T, Q, dim]
+            query_feat = query_feat[:, :, 0, :]
+        else:
+            pass
+
+
         # ===== MVA训练 =====
         # 启用MVA训练模式的情况下, 每个batch的任务数只能为1
         if self.mva_update:

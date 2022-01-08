@@ -113,8 +113,8 @@ class ImgMiniImageNet(Dataset):
             patch_list.append(self.default_transform(Image.open(self.data[i]).convert('RGB')))
 
             # patch_list后续元素为patch图
-            patch_num = 9
-            for _ in range(patch_num):
+            extra_patch_num = 19
+            for _ in range(extra_patch_num):
                 patch_list.append(self.transform(Image.open(self.data[i]).convert('RGB')))
             
             patch_list = torch.stack(patch_list, dim=0)  # [1+patch_num, 3, 80, 80]

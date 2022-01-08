@@ -10,7 +10,7 @@ test_dataloader_args: {
     sampler_args: 
     {
       batch_num: 2000,  # 500
-      shot_num: 5,
+      shot_num: 1,
       way_num: 5,
       query_num: 15
     },
@@ -19,7 +19,7 @@ test_dataloader_args: {
 
 network_args:
   {
-    model_name: mva-network,
+    model_name: patch-mva-network,
     model_args:
       {
         encoder_name: resnet12,  # resnet12, clip
@@ -28,18 +28,19 @@ network_args:
           {
             load_old_encoder: /space1/zhaoqing/code/few_shot_meta_baseline/save/pre_meta_2_stage/linear/metabasepre2/max-tva.pth,
           },
-        mva_name: w-attention,
+        mva_name: dot-attention,
         mva_args: {
-          update: True,
-          w_type: eye_add
+          update: False,
+          w_type: none
         },
         task_info: {
           batch_size: 1,
-          shot_num: 5,
+          shot_num: 1,
           way_num: 5,
           query_num: 15
         },
-        similarity_method: cos  # 'cos', 'sqr'
+        similarity_method: cos,  # 'cos', 'sqr'
+        patch_mode: 'default'
       },
     model_load_para: {},
 }
