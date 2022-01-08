@@ -73,7 +73,7 @@ def main(config):
 
     for epoch in range(1, test_epochs + 1):
         for image, _, _ in tqdm(test_dataloader, leave=False):
-            image = image.cuda()  # [320, 3, 224, 224]
+            image = image.cuda()  # No Patch: [320, 3, 80, 80]; Patch: [320, 10, 3, 80, 80]
 
             # 重载mva参数
             if update_mva:
@@ -107,7 +107,7 @@ def main(config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', default='./configs/test_mva_network.yaml')
+    parser.add_argument('--config', default='./configs/test_mva_network_sampling.yaml')
     parser.add_argument('--name', default='test_mva_network')
     parser.add_argument('--test-epochs', type=int, default=1)
     parser.add_argument('--gpu', default='0')

@@ -25,6 +25,10 @@ class MVANetwork(nn.Module):
         self.way_num = task_info['way_num']
         self.query_num = task_info['query_num']
 
+        # Patch模式信息
+        self.patch_flag = False
+        self.patch_num = 0
+
         # 其他
         self.similarity_method = similarity_method
         self.mva_name = mva_name
@@ -208,19 +212,34 @@ class MVANetwork(nn.Module):
         print("mva train done.")
 
     def forward(self, image):
-        # ===== 提取特征并整理 =====
+
+        # ===== 判断是否为Patch模式 =====
+        # Patch image shape: [320, 10, 3, 80, 80]
+        if len(image.shape) == 5:
+            self.patch_flag = True
+            self.patch_num = image.shape[1] - 1
+            image_num = image.shape[0]
+
+            # [320x10, 3, 80, 80]
+            image = image.reshape(-1, image.shape[2], image.shape[3], image.shape[4])
+        
+        # ===== 提取特征 =====
         if 'encode_image' in dir(self.encoder):
             feature = self.encoder.encode_image(image).float()
         else:
             feature = self.encoder(image)
 
-        # 划分特征
-        # shot_feat: [T, W, S, dim]
-        # query_feat: [T, Q, dim]
+        # ===== 整理, 划分特征 =====
+        # 非Patch模式: shot_feat: [T, W, S, dim], query_feat: [T, Q, dim]
+        # Patch模式: shot_feat: [T, W, S, P, dim], query_feat: [T, Q, P, dim], P: patch_num + 1
+        if self.patch_flag:
+            feature = feature.reshape(image_num, self.patch_num+1, feature.shape[1])  # [320, 10, 512]
+
         shot_feat, query_feat = fs.split_shot_query(
             feature, self.way_num, self.shot_num, self.query_num, self.batch_size)
-
+        
         # ===== MVA训练 =====
+        # 启用MVA训练模式的情况下, 每个batch的任务数只能为1
         if self.mva_update:
             self.train_mva(key=shot_feat, epoch_num=10,
                            enhance_threshold=0.0, enhance_top=10)
