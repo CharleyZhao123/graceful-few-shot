@@ -28,10 +28,11 @@ network_args:
           {
             load_old_encoder: /space1/zhaoqing/code/few_shot_meta_baseline/save/pre_meta_2_stage/linear/metabasepre2/max-tva.pth,
           },
-        mva_name: w-attention,
+        mva_name: key-attention,
         mva_args: {
           update: True,
-          w_type: eye_add  # eye_default
+          shot_num: 20,  # shot_num = patch_num*origin_shot_num
+          key_type: point,
         },
         task_info: {
           batch_size: 1,

@@ -137,7 +137,7 @@ class PatchMVANetwork(nn.Module):
 
         return fkey, fquery, flabel
 
-    def train_mva(self, key, epoch_num=30, enhance_threshold=0.0, enhance_top=10):
+    def train_mva(self, key, epoch_num=30, enhance_threshold=0.0, enhance_top=10, optimizer_type='adam'):
         '''
         使用support set数据(key)训练mva
         epoch_num: 正常训练的epoch次数, 每个epoch构建的tasks是不同的, 有难有易
@@ -146,13 +146,18 @@ class PatchMVANetwork(nn.Module):
         '''
         # 关键超参
         aug_type = 'zero'
-        choice_num = 1
+        choice_num = 10
         lr = 1e-2
-        l1 = True
+        l1 = False
 
         # 优化器
-        optimizer = torch.optim.SGD(self.mva.parameters(), lr=lr,
-                                    momentum=0.9, dampening=0.9, weight_decay=0)
+        if optimizer_type == 'adam':
+            optimizer = torch.optim.Adam(self.mva.parameters(), lr=lr,
+                                        betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
+        else:
+            optimizer = torch.optim.SGD(self.mva.parameters(), lr=lr,
+                                        momentum=0.9, dampening=0.9, weight_decay=0)
+
 
         # 训练
         with torch.enable_grad():
@@ -195,6 +200,16 @@ class PatchMVANetwork(nn.Module):
                     proto_feat = self.mva(fquery, fkey)
                     logits = self.get_logits(proto_feat, fquery)
                     loss = F.cross_entropy(logits, flabel)
+
+                    # l1 正则化项
+                    if l1:
+                        l1_reg = 0.0
+                        for param in self.mva.parameters():
+                            l1_reg += torch.sum(torch.abs(param))
+
+                        print(l1_reg)
+                        loss += 0.01 * l1_reg
+
                     acc = utils.compute_acc(logits, flabel)
 
                     loss.backward()
@@ -256,9 +271,10 @@ class PatchMVANetwork(nn.Module):
         # ===== MVA训练 =====
         # 启用MVA训练模式的情况下, 每个batch的任务数只能为1
         if self.mva_update:
-            self.train_mva(key=shot_feat, epoch_num=10,
-                           enhance_threshold=0.0, enhance_top=10)
-
+            self.train_mva(key=shot_feat, epoch_num=30,
+                           enhance_threshold=0.0, enhance_top=10, optimizer_type='adam')
+            # self.train_mva(key=shot_feat, epoch_num=10,
+            #                enhance_threshold=0.5, enhance_top=20, optimizer_type='adam')
         # ===== 将特征送入MVA进行计算 =====
         # proto_feat: [T, Q, W, dim]
         proto_feat = self.mva(query_feat, shot_feat)

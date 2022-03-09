@@ -1,5 +1,5 @@
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '7'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 import argparse
 import torch
 
@@ -25,7 +25,7 @@ def mean_confidence_interval(data, confidence=0.95):
 def main(config):
     # ===== 准备记录以及log信息 =====
     save_name = args.name
-    save_path = os.path.join('./save/test_mva', save_name)
+    save_path = os.path.join('./save/test_encoder_fsl', save_name)
 
     utils.ensure_path(save_path)
     utils.set_log_path(save_path)
@@ -38,17 +38,7 @@ def main(config):
 
     # model
     network_args = config['network_args']
-    model = build_model(network_args['model_name'], network_args['model_args'])
-
-    # 准备备用mva model, 保证每个task都是初始的mva, 不受之前的影响
-    mva_name = network_args['model_args']['mva_name']
-    mva_args = network_args['model_args']['mva_args']
-    if mva_args.get('update'):
-        update_mva = mva_args['update']
-    else:
-        update_mva = False
-    origin_mva_model = build_model(mva_name, mva_args)
-
+    model = build_model(network_args['model_name'], network_args['model_args'], network_args['model_load_para'])
     utils.log('num params: {}'.format(utils.compute_n_params(model)))
 
     # task信息
@@ -73,15 +63,51 @@ def main(config):
 
     for epoch in range(1, test_epochs + 1):
         for image, _, _ in tqdm(test_dataloader, leave=False):
-            image = image.cuda()  # No Patch: [320, 3, 80, 80]; Patch: [320, 10, 3, 80, 80]
+            image = image.cuda()  # [320, 10, 3, 80, 80]
 
-            # 重载mva参数
-            if update_mva:
-                model.mva.load_state_dict(origin_mva_model.state_dict())
-            
             with torch.no_grad():
-                # [320, 5]: 320 = 4 x (5 x (1 + 15))
-                logits = model(image)
+                # ===== task info =====
+                image_num = image.shape[0]
+                patch_num = image.shape[1]
+
+                # ===== 处理图像以及特征 =====
+                # [320x10, 3, 80, 80]
+                image = image.reshape(-1, image.shape[2], image.shape[3], image.shape[4])
+
+                # [320x10, 512]
+                if 'encode_image' in dir(model):
+                    image_feature = model.encode_image(image).float()
+                else:
+                    image_feature = model(image)
+                
+                feat_dim = image_feature.shape[-1]
+                
+                image_feature = image_feature.reshape(image_num, patch_num, feat_dim)  # [320, 10, 512]
+
+                # 划分并变换shot和query
+                # shot_feat: [4, 5, 1, P, 512]
+                # query_feat: [4, 75, P, 512]
+                shot_feat, query_feat = fs.split_shot_query(
+                    image_feature, way_num, shot_num, query_num, task_per_batch)
+                
+                new_shot_num = shot_num * patch_num
+                # 相当于将S shot变换为SxP shot: [T, W, S, P, dim] -> [T, W, SxP, dim]
+                shot_feat = shot_feat.reshape(task_per_batch, way_num, new_shot_num, feat_dim)
+                # [T, Q, P, dim] -> [T, Q, dim]
+                query_feat = query_feat[:, :, 0, :]                
+
+                # ===== 计算相似度和logits, 得到结果 =====
+                if config['similarity_method'] == 'cos':
+                    shot_feat = shot_feat.mean(dim=-2)
+                    shot_feat = F.normalize(shot_feat, dim=-1)
+                    query_feat = F.normalize(query_feat, dim=-1)
+                    metric = 'dot'
+                elif config['similarity_method'] == 'sqr':
+                    shot_feat = shot_feat.mean(dim=-2)
+                    metric = 'sqr'
+
+                logits = utils.compute_logits(
+                    query_feat, shot_feat, metric=metric, temp=1.0).view(-1, way_num)
 
                 label = fs.make_nk_label(
                     way_num, query_num, task_per_batch).cuda()
@@ -107,8 +133,8 @@ def main(config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', default='./configs/test_mva_network_key.yaml')
-    parser.add_argument('--name', default='test_mva_network')
+    parser.add_argument('--config', default='./configs/test_encoder_fsl_patch.yaml')
+    parser.add_argument('--name', default='test_encoder_fsl')
     parser.add_argument('--test-epochs', type=int, default=1)
     parser.add_argument('--gpu', default='0')
     args = parser.parse_args()

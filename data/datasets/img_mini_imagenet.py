@@ -88,7 +88,15 @@ class ImgMiniImageNet(Dataset):
                 normalize,
                 # transforms.Normalize(np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]),
                 #                     np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]))
-            ])           
+            ])
+            if augment == 'clip':
+                image_size = 224
+                self.default_transform = preprocess
+                self.transform = transforms.Compose([
+                    transforms.RandomResizedCrop(image_size),
+                    transforms.RandomHorizontalFlip(),
+                    self.default_transform
+                ])           
 
         def convert_raw(x):
             mean = torch.tensor(norm_params['mean']).view(3, 1, 1).type_as(x)
