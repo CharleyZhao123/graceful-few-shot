@@ -39,11 +39,11 @@ true_train_dataloader_args:
         split: train,
         augment: resize,
         type: true_data,
-        shot_num: 21,  # 70
+        shot_num: 70,  # 70
         query_num: 30,
       },
     sampler_name: default-sampler,
-    batch_size: 21,  # 70
+    batch_size: 70,  # 70
   }
 
 sim_val_dataloader_args:

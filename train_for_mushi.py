@@ -1,7 +1,7 @@
 import os
 import argparse
 import utils
-utils.set_gpu('6')
+utils.set_gpu('5')
 import torch
 from models import build_model
 
