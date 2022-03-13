@@ -146,7 +146,7 @@ class PatchMVANetwork(nn.Module):
         '''
         # 关键超参
         aug_type = 'zero'
-        choice_num = 10
+        choice_num = 1
         lr = 1e-2
         l1 = False
 
@@ -178,7 +178,7 @@ class PatchMVANetwork(nn.Module):
                         for param in self.mva.parameters():
                             l1_reg += torch.sum(torch.abs(param))
 
-                        print(l1_reg)
+                        # print(l1_reg)
                         loss += 0.01 * l1_reg
 
                     acc = utils.compute_acc(logits, flabel)
@@ -186,8 +186,8 @@ class PatchMVANetwork(nn.Module):
                     loss.backward()
                     optimizer.step()
 
-                    print('mva train epoch: {} acc={:.2f} loss={:.2f}'.format(
-                        epoch, acc, loss))
+                    # print('mva train epoch: {} acc={:.2f} loss={:.2f}'.format(
+                    #     epoch, acc, loss))
             else:
                 epoch = 1
                 enhance_num = 0
@@ -207,7 +207,7 @@ class PatchMVANetwork(nn.Module):
                         for param in self.mva.parameters():
                             l1_reg += torch.sum(torch.abs(param))
 
-                        print(l1_reg)
+                        # print(l1_reg)
                         loss += 0.01 * l1_reg
 
                     acc = utils.compute_acc(logits, flabel)
@@ -215,8 +215,8 @@ class PatchMVANetwork(nn.Module):
                     loss.backward()
                     optimizer.step()
 
-                    print('mva train epoch: {} acc={:.2f} loss={:.2f}'.format(
-                        epoch, acc, loss))
+                    # print('mva train epoch: {} acc={:.2f} loss={:.2f}'.format(
+                    #     epoch, acc, loss))
 
                     if acc < enhance_threshold:
                         enhance_num += 1
@@ -224,13 +224,14 @@ class PatchMVANetwork(nn.Module):
                             enhance_num = 0
                             epoch += 1
                         else:
-                            print('mva train epoch enhance time: {}'.format(
-                                enhance_num))
+                            pass
+                            # print('mva train epoch enhance time: {}'.format(
+                            #     enhance_num))
                     else:
                         enhance_num = 0
                         epoch += 1
 
-        print("mva train done.")
+        # print("mva train done.")
 
     def forward(self, image):
 
@@ -271,10 +272,10 @@ class PatchMVANetwork(nn.Module):
         # ===== MVA训练 =====
         # 启用MVA训练模式的情况下, 每个batch的任务数只能为1
         if self.mva_update:
-            self.train_mva(key=shot_feat, epoch_num=30,
-                           enhance_threshold=0.0, enhance_top=10, optimizer_type='adam')
-            # self.train_mva(key=shot_feat, epoch_num=10,
-            #                enhance_threshold=0.5, enhance_top=20, optimizer_type='adam')
+            # self.train_mva(key=shot_feat, epoch_num=30,
+            #                enhance_threshold=0.0, enhance_top=10, optimizer_type='adam')
+            self.train_mva(key=shot_feat, epoch_num=10,
+                           enhance_threshold=0.5, enhance_top=20, optimizer_type='adam')
         # ===== 将特征送入MVA进行计算 =====
         # proto_feat: [T, Q, W, dim]
         proto_feat = self.mva(query_feat, shot_feat)
