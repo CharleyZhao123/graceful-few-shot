@@ -131,6 +131,9 @@ def main(config):
         if outer_lr_scheduler is not None:
             outer_lr_scheduler.step()
 
+        for k, v in aves.items():
+            aves[k] = v.item()
+
         # 记录log, 保存checkpoint
         t_epoch = utils.time_str(timer_epoch.t())
         t_used = utils.time_str(timer_used.t())

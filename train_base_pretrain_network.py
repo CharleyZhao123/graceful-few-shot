@@ -92,7 +92,6 @@ def main(config):
         if lr_scheduler is not None:
             lr_scheduler.step()
         
-        # 是否多余?
         for k, v in aves.items():
             aves[k] = v.item()
 
