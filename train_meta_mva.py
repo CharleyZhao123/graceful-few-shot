@@ -86,8 +86,8 @@ def main(config):
             loss.backward()
             outer_optimizer.step()
 
-            aves['train_loss'].add(loss.item(), len(image))
-            aves['train_acc'].add(acc, len(image))
+            aves['train_loss'].add(loss.item())
+            aves['train_acc'].add(acc)
 
             logits = None
             loss = None
@@ -121,8 +121,8 @@ def main(config):
 
                 acc = utils.compute_acc(logits, label)
 
-                aves['val_loss'].add(loss.item(), len(image))
-                aves['val_acc'].add(acc, len(image))      
+                aves['val_loss'].add(loss.item())
+                aves['val_acc'].add(acc)      
 
         # 重载mva参数
         if update_mva:
@@ -136,8 +136,9 @@ def main(config):
         t_used = utils.time_str(timer_used.t())
         t_estimate = utils.time_str(timer_used.t() / epoch * full_epoch)
 
+        str_epoch = str(epoch)
         log_str = 'epoch {}, train {:.4f}|{:.4f}'.format(
-                epoch, aves['train_loss'], aves['train_acc'])
+                str_epoch, aves['train_loss'], aves['train_acc'])
         tb_writer.add_scalars('loss', {'train': aves['train_loss']}, epoch)
         tb_writer.add_scalars('acc', {'train': aves['train_acc']}, epoch)
 
