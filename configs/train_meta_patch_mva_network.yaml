@@ -62,6 +62,9 @@ network_args: {
         meta_info: {
           inner_epoch: 30,
           inner_lr: 0.001,
+          inner_aug_type: 'zero',
+          inner_choice_num: 2,
+          inner_use_l1: False,
           outer_epoch: 1,
           outer_optimizer_name: adam,
           outer_optimizer_args: {

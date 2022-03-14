@@ -1,4 +1,5 @@
 # changed from https://github.com/miguealanmath/MAML-Pytorch/blob/master/MAML-v1.ipynb
+from numpy import outer
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -7,7 +8,6 @@ import random
 from models import model_register, build_model
 import utils
 import utils.few_shot as fs
-
 
 @model_register('meta-patch-mva-network')
 class MetaPatchMVANetwork(nn.Module):
@@ -141,7 +141,7 @@ class MetaPatchMVANetwork(nn.Module):
 
         return fkey, fquery, flabel
 
-    def inner_loop_train(self, key, epoch_num=30, enhance_threshold=0.0, enhance_top=10, inner_lr=0.001):
+    def meta_train(self, key, query, meta_info={}, enhance_threshold=0.0, enhance_top=10):
         '''
         使用support set数据(key)进行inner-loop训练
         epoch_num: 正常训练的epoch次数, 每个epoch构建的tasks是不同的, 有难有易
@@ -149,12 +149,17 @@ class MetaPatchMVANetwork(nn.Module):
         enhance_top: 增强次数上限, 最多增强该次数(包含)
         '''
         # 关键超参
-        aug_type = 'zero'
-        choice_num = 2
-        lr = inner_lr
-        l1 = False
+        inner_epoch_num = meta_info['inner_epoch']
+        lr = meta_info['inner_lr']
+        aug_type = meta_info['inner_aug_type']
+        choice_num = meta_info['inner_choice_num']
+        l1 = meta_info['inner_use_l1']
 
-        # 1: 第一次更新
+        outer_epoch_num = meta_info['outer_epoch']
+        outer_optimizer_name = meta_info['outer_optimizer_name']
+        outer_optimizer_args = meta_info['outer_optimizer_args']
+
+        # 1: 第一次inner更新
         epoch = 1
         enhance_num = 0
         fkey, fquery, flabel = self.build_fake_trainset(
@@ -162,26 +167,28 @@ class MetaPatchMVANetwork(nn.Module):
         proto_feat = self.mva(fquery, fkey)
         logits = self.get_logits(proto_feat, fquery)
         loss = F.cross_entropy(logits, flabel)
+        acc = utils.compute_acc(logits, flabel)
 
         grad = torch.autograd.grad(loss, self.mva.parameters())
         tuples = zip(grad, self.mva.parameters())
         fast_weights = list(map(lambda p: p[1] - lr * p[0], tuples))
         epoch += 1
 
-        while epoch < epoch_num + 1:
-            mva = build_model(self.mva_name, self.mva_args)
-            mva.load_state_dict(fast_weights)
-
+        # 2: 第[2: inner_epoch]次更新
+        while epoch < inner_epoch_num + 1:
             fkey, fquery, flabel = self.build_fake_trainset(
                 key, choice_num=choice_num, aug_type=aug_type, epoch=epoch)
-            proto_feat = mva(fquery, fkey)
+            proto_feat = self.mva(fquery, fkey, fast_weights)
             logits = self.get_logits(proto_feat, fquery)
             loss = F.cross_entropy(logits, flabel)
-
             acc = utils.compute_acc(logits, flabel)
 
             # print('mva train epoch: {} acc={:.2f} loss={:.2f}'.format(
             #     epoch, acc, loss))
+
+            grad = torch.autograd.grad(loss, self.mva.parameters())
+            tuples = zip(grad, self.mva.parameters())
+            fast_weights = list(map(lambda p: p[1] - lr * p[0], tuples))
 
             if acc < enhance_threshold:
                 enhance_num += 1
@@ -195,8 +202,11 @@ class MetaPatchMVANetwork(nn.Module):
             else:
                 enhance_num = 0
                 epoch += 1
+        
+        # 3: 对query进行评估, 并outer更新模型
+        proto_feat = self.mva(query, key, fast_weights)
 
-        # print("mva train done.")
+        # print("meta inner loop train done.")
 
     def forward(self, image):
         # ===== 数据整理 =====
@@ -236,11 +246,10 @@ class MetaPatchMVANetwork(nn.Module):
         else:
             pass
 
-        # ===== inner-loop训练 =====
-        # 启用inner训练模式的情况下, 每个batch的任务数只能为1
-        self.inner_loop_train(key=shot_feat, epoch_num=self.meta_info['inner_epoch'],
-                              enhance_threshold=0.5, enhance_top=20,
-                              inner_lr=self.meta_info['inner_lr'])
+        # ===== 元训练 =====
+        # 元训练模式的情况下, 每个batch的任务数只能为1
+        self.meta_train(key=shot_feat, query=query_feat, meta_info=self.meta_info,
+                              enhance_threshold=0.0, enhance_top=20)
 
         # ===== 将特征送入MVA进行计算 =====
         # proto_feat: [T, Q, W, dim]
