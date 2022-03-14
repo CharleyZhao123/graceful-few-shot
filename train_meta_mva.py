@@ -1,5 +1,5 @@
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '7'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 import argparse
 import torch
 
@@ -52,7 +52,7 @@ def main(config):
     # ===== 训练 =====
     # optimizer
     trainer_args = config['trainer_args']
-    outer_optimizer, outer_lr_scheduler = utils.make_optimizer(model.parameters(), trainer_args['outer_optimizer_name'], **trainer_args['outer_optimizer_args'])
+    outer_optimizer, outer_lr_scheduler = utils.make_optimizer(model.mva.parameters(), trainer_args['outer_optimizer_name'], **trainer_args['outer_optimizer_args'])
 
     full_epoch = trainer_args['full_epoch']
     save_epoch = trainer_args['save_epoch']

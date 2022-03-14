@@ -37,7 +37,7 @@ val_dataloader_args: {
 }
 
 network_args: {
-    model_name: patch-mva-network,
+    model_name: meta-patch-mva-network,
     model_args:
       {
         encoder_name: resnet12,  # resnet12, clip
@@ -47,11 +47,9 @@ network_args: {
             # load_old_encoder: /space1/zhaoqing/code/few_shot_meta_baseline/save/pre_meta_2_stage/linear/metabasepre2/max-tva.pth,
             load_old_encoder: /space0/songk/code/graceful-few-shot/save/old_ckpt/pre_meta_2_stage/max-tva.pth,
           },
-        mva_name: task-attention,
+        mva_name: meta-attention,
         mva_args: {
-          update: True,
           shot_num: 5,  # shot_num = patch_num*origin_shot_num
-          key_type: task_meta,
         },
         task_info: {
           batch_size: 1,
@@ -60,24 +58,22 @@ network_args: {
           query_num: 15
         },
         similarity_method: cos,  # 'cos', 'sqr'
-        patch_mode: default
+        patch_mode: default,
+        meta_info: {
+          inner_epoch: 30,
+          inner_lr: 0.001,
+          outer_epoch: 1,
+          outer_optimizer_name: adam,
+          outer_optimizer_args: {
+            lr: 0.001,
+            weight_decay: 5.e-4
+          },
+        },
       },
     model_load_para: {},
 }
 
 trainer_args: {
-  # inner_optimizer_name: sgd,
-  # inner_optimizer_args: {
-  #   lr: 0.001,
-  #   weight_decay: 5.e-4
-  # },
-  outer_optimizer_name: adam,
-  outer_optimizer_args: {
-    lr: 0.001,
-    weight_decay: 5.e-4
-  },
-  # inner_epoch: 30,
-  # outer_epoch: 1,
   full_epoch: 100,
   save_epoch: 1
 }

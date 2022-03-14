@@ -1,5 +1,5 @@
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '7'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 import argparse
 import torch
 
@@ -90,8 +90,8 @@ def main(config):
 
                 acc = utils.compute_acc(logits, label)
 
-                aves['test_loss'].add(loss.item(), len(image))
-                aves['test_acc'].add(acc, len(image))
+                aves['test_loss'].add(loss.item())
+                aves['test_acc'].add(acc)
 
                 test_acc_list.append(acc)
 
@@ -107,7 +107,7 @@ def main(config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', default='./configs/test_mva_network_task.yaml')
+    parser.add_argument('--config', default='./configs/test_mva_network_key.yaml')
     parser.add_argument('--name', default='test_mva_network')
     parser.add_argument('--test-epochs', type=int, default=1)
     parser.add_argument('--gpu', default='0')

@@ -298,7 +298,7 @@ class TaskAttention(nn.Module):
             task_gate_indim = self.dim * (1 + shot_num)
             self.task_gate = nn.Linear(task_gate_indim, shot_num)
 
-    def forward(self, query, key):
+    def forward(self, query, key, params=None):
         # ===== 准备 =====
         query_num = query.shape[1]
         way_num = key.shape[1]
@@ -347,6 +347,85 @@ class TaskAttention(nn.Module):
 
         return proto_feat
 
+@model_register('meta-attention')
+class MetaAttention(nn.Module):
+    '''
+    Task-Level Attention for Meta Learning
+    输入: Q: [1, Q, dim], K: [1, W, S, dim]
+    输出: O: [1, Q, W, dim]
+    '''
+
+    def __init__(self, dim=512, use_scaling=False, similarity_method='cos',
+                 nor_type='softmax', way_num=5, shot_num=5, gate_type='task_gate', **kargs):
+        super().__init__()
+        self.dim = dim
+        self.use_scaling = use_scaling
+        self.scaling = torch.sqrt(torch.tensor(dim).float())
+        self.similarity_method = similarity_method
+        self.nor_type = nor_type
+        self.way_num = way_num
+        self.gate_type = gate_type
+
+        # 构建参数矩阵
+        self.key_trans_weight = nn.Parameter(torch.randn(1, way_num, shot_num, dim, dim))
+
+        # Task Gate
+        if self.gate_type == 'task_gate':
+            task_gate_indim = self.dim * (1 + shot_num)
+            self.task_gate = nn.Linear(task_gate_indim, shot_num)
+
+    def forward(self, query, key, params=None):
+        # ===== 准备 =====
+        query_num = query.shape[1]
+        way_num = key.shape[1]
+
+        # ===== 线性变换 =====
+        new_query = query  # [1, Q, dim]
+
+        # key: [1, W, S, dim], weight: [1, W, S, dim, dim], new_key: [1, W, S, dim]
+        new_key = key.unsqueeze(-2)  # [1, W, S, 1, dim]
+        new_key = torch.matmul(new_key, self.key_trans_weight).squeeze(-2)
+
+        new_value = new_key  # [1, W, S, dim]
+
+        # ===== 得到prototype特征 =====
+        # 整理tensor便于计算
+        new_key = new_key.unsqueeze(1).repeat(
+            1, query_num, 1, 1, 1)  # [1, Q, W, S, dim]
+        new_value = new_value.unsqueeze(1).repeat(
+            1, query_num, 1, 1, 1)  # [1, Q, W, S, dim]
+        new_query = new_query.unsqueeze(2).repeat(
+            1, 1, way_num, 1).unsqueeze(-2)  # [1, Q, W, 1, dim]
+
+        if self.gate_type == 'task_gate':
+            gate_input = torch.cat([new_query, new_key], dim=-2)  # [1, Q, W, (1+S), dim]
+            gate_input = gate_input.view(query_num*way_num, -1)  # [Q*W, (1+S)*dim]
+            gate_output = self.task_gate(gate_input)  # [Q*W, S]
+            sim = gate_output.view(1, query_num, way_num, -1).unsqueeze(-2)  # [1, Q, W, 1, S]
+        else:  # 'sim_gate'
+            # 计算Query与Key的相似度
+            if self.similarity_method == 'cos':
+                nor_query = F.normalize(new_query, dim=-1)
+                nor_key = F.normalize(new_key, dim=-1)
+
+                sim = torch.matmul(nor_query, nor_key.permute(
+                    0, 1, 2, 4, 3))  # [1, Q, W, 1, S]
+            else:
+                pass
+
+        # 处理相似度
+        if self.use_scaling:
+            sim = sim / self.scaling
+        if self.nor_type == 'softmax':
+            sim = F.softmax(sim, dim=-1)
+        elif self.nor_type == 'l2_norm':
+            sim = F.normalize(sim, dim=-1)
+        # print(sim[0, 0, 0, 0, :])
+
+        # 加权(相似度)求和
+        proto_feat = torch.matmul(sim, new_value).squeeze(-2)  # [T, Q, W, dim]
+
+        return proto_feat
 
 if __name__ == '__main__':
     query=torch.rand((4, 75, 512))

@@ -121,7 +121,7 @@ class ImgMiniImageNet(Dataset):
             patch_list.append(self.default_transform(Image.open(self.data[i]).convert('RGB')))
 
             # patch_list后续元素为patch图
-            extra_patch_num = 2
+            extra_patch_num = 4
             for _ in range(extra_patch_num):
                 patch_list.append(self.transform(Image.open(self.data[i]).convert('RGB')))
             

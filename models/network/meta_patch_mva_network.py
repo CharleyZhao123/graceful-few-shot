@@ -1,3 +1,4 @@
+# changed from https://github.com/miguealanmath/MAML-Pytorch/blob/master/MAML-v1.ipynb
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -8,11 +9,11 @@ import utils
 import utils.few_shot as fs
 
 
-@model_register('patch-mva-network')
-class PatchMVANetwork(nn.Module):
+@model_register('meta-patch-mva-network')
+class MetaPatchMVANetwork(nn.Module):
     def __init__(self, encoder_name='resnet12', encoder_args={}, encoder_load_para={},
-                 mva_name='dot-attention', mva_args={'update': False}, mva_load_para={}, task_info={},
-                 similarity_method='cos', patch_mode='default'):
+                 mva_name='dot-attention', mva_args={}, mva_load_para={}, task_info={},
+                 similarity_method='cos', patch_mode='default', meta_info={}):
         super().__init__()
         # ===== 子模块构建 =====
         self.encoder = build_model(
@@ -26,17 +27,20 @@ class PatchMVANetwork(nn.Module):
         self.query_num = task_info['query_num']
 
         # ===== Patch模式信息 =====
-        # patch_mode: 
+        # patch_mode:
         # default: 当做对Support的数据增强看待
         self.patch_mode = patch_mode
 
         # patch_num: Patch的数量, 为图像Patch维度, 第0个图像为原图
         self.patch_num = 1
 
+        # ===== 元学习信息 =====
+        self.meta_info = meta_info
+
         # ===== 其他 =====
         self.similarity_method = similarity_method
         self.mva_name = mva_name
-        self.mva_update = mva_args['update']
+        self.mva_args = mva_args
 
     def get_logits(self, proto_feat, query_feat):
         '''
@@ -137,9 +141,9 @@ class PatchMVANetwork(nn.Module):
 
         return fkey, fquery, flabel
 
-    def train_mva(self, key, epoch_num=30, enhance_threshold=0.0, enhance_top=10, optimizer_type='adam'):
+    def inner_loop_train(self, key, epoch_num=30, enhance_threshold=0.0, enhance_top=10, inner_lr=0.001):
         '''
-        使用support set数据(key)训练mva
+        使用support set数据(key)进行inner-loop训练
         epoch_num: 正常训练的epoch次数, 每个epoch构建的tasks是不同的, 有难有易
         enhance_threshold: 判断是否需要对该epoch增强的阈值, 如果acc小于该阈值, 则增强
         enhance_top: 增强次数上限, 最多增强该次数(包含)
@@ -147,135 +151,97 @@ class PatchMVANetwork(nn.Module):
         # 关键超参
         aug_type = 'zero'
         choice_num = 2
-        lr = 1e-3
+        lr = inner_lr
         l1 = False
 
-        # 优化器
-        if optimizer_type == 'adam':
-            optimizer = torch.optim.Adam(self.mva.parameters(), lr=lr,
-                                        betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
-        else:
-            optimizer = torch.optim.SGD(self.mva.parameters(), lr=lr,
-                                        momentum=0.9, dampening=0.9, weight_decay=0)
+        # 1: 第一次更新
+        epoch = 1
+        enhance_num = 0
+        fkey, fquery, flabel = self.build_fake_trainset(
+            key, choice_num=choice_num, aug_type=aug_type, epoch=epoch)
+        proto_feat = self.mva(fquery, fkey)
+        logits = self.get_logits(proto_feat, fquery)
+        loss = F.cross_entropy(logits, flabel)
 
+        grad = torch.autograd.grad(loss, self.mva.parameters())
+        tuples = zip(grad, self.mva.parameters())
+        fast_weights = list(map(lambda p: p[1] - lr * p[0], tuples))
+        epoch += 1
 
-        # 训练
-        with torch.enable_grad():
-            if enhance_threshold == 0.0:
-                for epoch in range(1, epoch_num+1):
-                    fkey, fquery, flabel = self.build_fake_trainset(
-                        key, choice_num=choice_num, aug_type=aug_type, epoch=epoch)
+        while epoch < epoch_num + 1:
+            mva = build_model(self.mva_name, self.mva_args)
+            mva.load_state_dict(fast_weights)
 
-                    optimizer.zero_grad()
+            fkey, fquery, flabel = self.build_fake_trainset(
+                key, choice_num=choice_num, aug_type=aug_type, epoch=epoch)
+            proto_feat = mva(fquery, fkey)
+            logits = self.get_logits(proto_feat, fquery)
+            loss = F.cross_entropy(logits, flabel)
 
-                    proto_feat = self.mva(fquery, fkey)
-                    logits = self.get_logits(proto_feat, fquery)
-                    loss = F.cross_entropy(logits, flabel)
+            acc = utils.compute_acc(logits, flabel)
 
-                    # l1 正则化项
-                    if l1:
-                        l1_reg = 0.0
-                        for param in self.mva.parameters():
-                            l1_reg += torch.sum(torch.abs(param))
+            # print('mva train epoch: {} acc={:.2f} loss={:.2f}'.format(
+            #     epoch, acc, loss))
 
-                        # print(l1_reg)
-                        loss += 0.01 * l1_reg
-
-                    acc = utils.compute_acc(logits, flabel)
-
-                    loss.backward()
-                    optimizer.step()
-
-                    # print('mva train epoch: {} acc={:.2f} loss={:.2f}'.format(
-                    #     epoch, acc, loss))
+            if acc < enhance_threshold:
+                enhance_num += 1
+                if enhance_num > enhance_top:
+                    enhance_num = 0
+                    epoch += 1
+                else:
+                    pass
+                    # print('mva train epoch enhance time: {}'.format(
+                    #     enhance_num))
             else:
-                epoch = 1
                 enhance_num = 0
-                while epoch < epoch_num + 1:
-                    fkey, fquery, flabel = self.build_fake_trainset(
-                        key, choice_num=choice_num, aug_type=aug_type, epoch=epoch)
-
-                    optimizer.zero_grad()
-
-                    proto_feat = self.mva(fquery, fkey)
-                    logits = self.get_logits(proto_feat, fquery)
-                    loss = F.cross_entropy(logits, flabel)
-
-                    # l1 正则化项
-                    if l1:
-                        l1_reg = 0.0
-                        for param in self.mva.parameters():
-                            l1_reg += torch.sum(torch.abs(param))
-
-                        # print(l1_reg)
-                        loss += 0.01 * l1_reg
-
-                    acc = utils.compute_acc(logits, flabel)
-
-                    loss.backward()
-                    optimizer.step()
-
-                    # print('mva train epoch: {} acc={:.2f} loss={:.2f}'.format(
-                    #     epoch, acc, loss))
-
-                    if acc < enhance_threshold:
-                        enhance_num += 1
-                        if enhance_num > enhance_top:
-                            enhance_num = 0
-                            epoch += 1
-                        else:
-                            pass
-                            # print('mva train epoch enhance time: {}'.format(
-                            #     enhance_num))
-                    else:
-                        enhance_num = 0
-                        epoch += 1
+                epoch += 1
 
         # print("mva train done.")
 
     def forward(self, image):
-
+        # ===== 数据整理 =====
         # Patch image shape: [320, 10, 3, 80, 80]
         self.patch_num = image.shape[1]
         image_num = image.shape[0]
 
         # [320x10, 3, 80, 80]
-        image = image.reshape(-1, image.shape[2], image.shape[3], image.shape[4])
-        
+        image = image.reshape(-1,
+                              image.shape[2], image.shape[3], image.shape[4])
+
         # ===== 提取特征 =====
-        if 'encode_image' in dir(self.encoder):
-            feature = self.encoder.encode_image(image).float()
-        else:
-            feature = self.encoder(image)
+        with torch.no_grad():
+            if 'encode_image' in dir(self.encoder):
+                feature = self.encoder.encode_image(image).float()
+            else:
+                feature = self.encoder(image)
 
         # ===== 整理, 划分特征 =====
         feat_dim = feature.shape[-1]
-        feature = feature.reshape(image_num, self.patch_num, feat_dim)  # [320, 10, 512]
+        feature = feature.reshape(
+            image_num, self.patch_num, feat_dim)  # [320, 10, 512]
 
         # shot_feat: [T, W, S, P, dim], query_feat: [T, Q, P, dim], P: patch_num
         shot_feat, query_feat = fs.split_shot_query(
             feature, self.way_num, self.shot_num, self.query_num, self.batch_size)
-        
+
         # 根据patch_mode整理特征
         # 'default': qurey取原图特征, support将Patch看作数据增广
-
         if self.patch_mode == 'default':
             new_shot_num = self.shot_num * self.patch_num
             # 相当于将S shot变换为SxP shot: [T, W, S, P, dim] -> [T, W, SxP, dim]
-            shot_feat = shot_feat.reshape(self.batch_size, self.way_num, new_shot_num, feat_dim)
+            shot_feat = shot_feat.reshape(
+                self.batch_size, self.way_num, new_shot_num, feat_dim)
             # [T, Q, P, dim] -> [T, Q, dim]
             query_feat = query_feat[:, :, 0, :]
         else:
             pass
 
+        # ===== inner-loop训练 =====
+        # 启用inner训练模式的情况下, 每个batch的任务数只能为1
+        self.inner_loop_train(key=shot_feat, epoch_num=self.meta_info['inner_epoch'],
+                              enhance_threshold=0.5, enhance_top=20,
+                              inner_lr=self.meta_info['inner_lr'])
 
-        # ===== MVA训练 =====
-        # 启用MVA训练模式的情况下, 每个batch的任务数只能为1
-        if self.mva_update:
-            # self.train_mva(key=shot_feat, epoch_num=30,
-            #                enhance_threshold=0.0, enhance_top=10, optimizer_type='adam')
-            self.train_mva(key=shot_feat, epoch_num=30,
-                           enhance_threshold=0.5, enhance_top=20, optimizer_type='adam')
         # ===== 将特征送入MVA进行计算 =====
         # proto_feat: [T, Q, W, dim]
         proto_feat = self.mva(query_feat, shot_feat)
