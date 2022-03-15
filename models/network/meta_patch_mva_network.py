@@ -141,14 +141,15 @@ class MetaPatchMVANetwork(nn.Module):
 
         return fkey, fquery, flabel
 
-    def meta_train(self, key, query, meta_info={}, enhance_threshold=0.0, enhance_top=10):
+    def meta_train(self, key, query, meta_info={}, enhance_threshold=0.0, enhance_top=10, flag='train'):
         '''
         使用support set数据(key)进行inner-loop训练
         epoch_num: 正常训练的epoch次数, 每个epoch构建的tasks是不同的, 有难有易
         enhance_threshold: 判断是否需要对该epoch增强的阈值, 如果acc小于该阈值, 则增强
         enhance_top: 增强次数上限, 最多增强该次数(包含)
         '''
-        # 关键超参
+        # 关键参数
+
         inner_epoch_num = meta_info['inner_epoch']
         lr = meta_info['inner_lr']
         aug_type = meta_info['inner_aug_type']
@@ -158,6 +159,10 @@ class MetaPatchMVANetwork(nn.Module):
         outer_epoch_num = meta_info['outer_epoch']
         outer_optimizer_name = meta_info['outer_optimizer_name']
         outer_optimizer_args = meta_info['outer_optimizer_args']
+
+        # 0: 准备outer-loop优化器
+        if flag == 'train':
+            outer_optimizer, outer_lr_scheduler = utils.make_optimizer(self.mva.parameters(), outer_optimizer_name, **outer_optimizer_args)
 
         # 1: 第一次inner更新
         epoch = 1
@@ -205,6 +210,20 @@ class MetaPatchMVANetwork(nn.Module):
         
         # 3: 对query进行评估, 并outer更新模型
         proto_feat = self.mva(query, key, fast_weights)
+        label = fs.make_nk_label(self.way_num, self.query_num, self.batch_size).cuda()
+        query_logits = self.get_logits(proto_feat, query)
+        query_loss = F.cross_entropy(query_logits, label)
+        query_acc = utils.compute_acc(query_logits, label)
+        # 优化
+        if flag == 'train':
+            outer_optimizer.zero_grad()
+            query_loss.backward()
+            outer_optimizer.step()
+
+            if outer_lr_scheduler is not None:
+                outer_lr_scheduler.step()
+
+        return query_loss, query_acc
 
         # print("meta inner loop train done.")
 
@@ -248,14 +267,52 @@ class MetaPatchMVANetwork(nn.Module):
 
         # ===== 元训练 =====
         # 元训练模式的情况下, 每个batch的任务数只能为1
-        self.meta_train(key=shot_feat, query=query_feat, meta_info=self.meta_info,
-                              enhance_threshold=0.0, enhance_top=20)
+        query_loss, query_acc = self.meta_train(key=shot_feat, query=query_feat, meta_info=self.meta_info,
+                              enhance_threshold=0.0, enhance_top=20, flag='train')
 
-        # ===== 将特征送入MVA进行计算 =====
-        # proto_feat: [T, Q, W, dim]
-        proto_feat = self.mva(query_feat, shot_feat)
+        return query_loss, query_acc
 
-        # ===== 得到最终的分类logits =====
-        logits = self.get_logits(proto_feat, query_feat)
+    def finetune(self, image):
+        # ===== 数据整理 =====
+        # Patch image shape: [320, 10, 3, 80, 80]
+        self.patch_num = image.shape[1]
+        image_num = image.shape[0]
 
-        return logits
+        # [320x10, 3, 80, 80]
+        image = image.reshape(-1,
+                              image.shape[2], image.shape[3], image.shape[4])
+
+        # ===== 提取特征 =====
+        with torch.no_grad():
+            if 'encode_image' in dir(self.encoder):
+                feature = self.encoder.encode_image(image).float()
+            else:
+                feature = self.encoder(image)
+
+        # ===== 整理, 划分特征 =====
+        feat_dim = feature.shape[-1]
+        feature = feature.reshape(
+            image_num, self.patch_num, feat_dim)  # [320, 10, 512]
+
+        # shot_feat: [T, W, S, P, dim], query_feat: [T, Q, P, dim], P: patch_num
+        shot_feat, query_feat = fs.split_shot_query(
+            feature, self.way_num, self.shot_num, self.query_num, self.batch_size)
+
+        # 根据patch_mode整理特征
+        # 'default': qurey取原图特征, support将Patch看作数据增广
+        if self.patch_mode == 'default':
+            new_shot_num = self.shot_num * self.patch_num
+            # 相当于将S shot变换为SxP shot: [T, W, S, P, dim] -> [T, W, SxP, dim]
+            shot_feat = shot_feat.reshape(
+                self.batch_size, self.way_num, new_shot_num, feat_dim)
+            # [T, Q, P, dim] -> [T, Q, dim]
+            query_feat = query_feat[:, :, 0, :]
+        else:
+            pass
+
+        # ===== 元训练 =====
+        # 元训练模式的情况下, 每个batch的任务数只能为1
+        query_loss, query_acc = self.meta_train(key=shot_feat, query=query_feat, meta_info=self.meta_info,
+                              enhance_threshold=0.0, enhance_top=20, flag='finetune')
+
+        return query_loss, query_acc

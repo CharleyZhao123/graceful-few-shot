@@ -32,9 +32,10 @@ class MetaAttention(nn.Module):
 
         # Task Gate
         task_gate_indim = self.dim * (1 + shot_num)
-        task_gate_weight = nn.Parameter(torch.ones(task_gate_indim, shot_num))
+        task_gate_weight = nn.Parameter(torch.ones(shot_num, task_gate_indim))
+        task_gate_bias = nn.Parameter(torch.zeros(shot_num))
 
-        self.vars.extend([key_trans_weight, task_gate_weight])
+        self.vars.extend([key_trans_weight, task_gate_weight, task_gate_bias])
 
     def forward(self, query, key, params=None):
         # ===== 准备 =====
@@ -46,6 +47,7 @@ class MetaAttention(nn.Module):
         
         key_trans_weight = params[0]
         task_gate_weight = params[1]
+        task_gate_bias = params[2]
 
         # ===== 线性变换 =====
         new_query = query  # [1, Q, dim]
@@ -68,7 +70,7 @@ class MetaAttention(nn.Module):
         # gate过滤
         gate_input = torch.cat([new_query, new_key], dim=-2)  # [1, Q, W, (1+S), dim]
         gate_input = gate_input.view(query_num*way_num, -1)  # [Q*W, (1+S)*dim]
-        gate_output = F.linear(gate_input, weight=task_gate_weight)  # [Q*W, S]
+        gate_output = F.linear(gate_input, weight=task_gate_weight, bias=task_gate_bias)  # [Q*W, S]
         sim = gate_output.view(1, query_num, way_num, -1).unsqueeze(-2)  # [1, Q, W, 1, S]
 
         # 处理相似度
