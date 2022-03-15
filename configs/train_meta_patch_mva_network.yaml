@@ -49,7 +49,7 @@ network_args: {
           },
         mva_name: meta-attention,
         mva_args: {
-          shot_num: 5,  # shot_num = patch_num*origin_shot_num
+          shot_num: 20,  # shot_num = patch_num*origin_shot_num
         },
         task_info: {
           batch_size: 1,
