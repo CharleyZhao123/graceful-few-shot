@@ -50,7 +50,8 @@ network_args: {
         mva_name: meta-attention,
         mva_args: {
           shot_num: 20,  # shot_num = patch_num*origin_shot_num
-          nor_type: l2_norm  # 'softmax'
+          nor_type: softmax,  # 'softmax', 'l2_norm'
+          similarity_method: 'cos'
         },
         task_info: {
           batch_size: 1,

@@ -95,15 +95,6 @@ class MetaAttention(nn.Module):
         new_query = new_query.unsqueeze(2).repeat(
             1, 1, way_num, 1).unsqueeze(-2)  # [1, Q, W, 1, dim]
 
-        # 相似度过滤:
-        if self.similarity_method == 'cos':
-            nor_query = F.normalize(new_query, dim=-1)
-            nor_key = F.normalize(new_key, dim=-1)
-
-            sim = torch.matmul(nor_query, nor_key.permute(
-                0, 1, 2, 4, 3))  # [T, Q, W, 1, S]
-            
-
         # gate过滤: concat & MLP
         gate_input = torch.cat([new_query, new_key], dim=-2)  # [1, Q, W, (1+S), dim]
         gate_input = gate_input.view(query_num*way_num, -1)  # [Q*W, (1+S)*dim]
@@ -118,6 +109,15 @@ class MetaAttention(nn.Module):
         elif self.nor_type == 'l2_norm':
             sim = F.normalize(sim, dim=-1)
         # print(sim[0, 0, 0, 0, :])
+
+        # 相似度过滤
+        if self.similarity_method == 'cos':
+            nor_query = F.normalize(new_query, dim=-1)
+            nor_key = F.normalize(new_key, dim=-1)
+
+            sim += torch.matmul(nor_query, nor_key.permute(
+                0, 1, 2, 4, 3))  # [T, Q, W, 1, S]
+            sim = F.normalize(sim, dim=-1)
 
         # 加权(相似度)求和
         proto_feat = torch.matmul(sim, new_value).squeeze(-2)  # [T, Q, W, dim]
