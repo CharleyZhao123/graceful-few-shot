@@ -176,7 +176,7 @@ class MetaPatchMVANetwork(nn.Module):
         loss = F.cross_entropy(logits, flabel)
         acc = utils.compute_acc(logits, flabel)
         print("========")
-        print(acc)
+        # print(acc)
         grad = torch.autograd.grad(loss, self.mva.parameters())
         tuples = zip(grad, self.mva.parameters())
         fast_weights = list(map(lambda p: p[1] - lr * p[0], tuples))
@@ -197,7 +197,7 @@ class MetaPatchMVANetwork(nn.Module):
 
             # print('mva train epoch: {} acc={:.2f} loss={:.2f}'.format(
             #     epoch, acc, loss))
-            print(acc)
+            # print(acc)
 
             grad = torch.autograd.grad(loss, self.mva.parameters())
             tuples = zip(grad, self.mva.parameters())
@@ -292,6 +292,8 @@ class MetaPatchMVANetwork(nn.Module):
             query_loss, query_acc = self.meta_train(key=shot_feat, query=query_feat, meta_info=self.meta_info,
                                 inner_weights='max', flag='train')
             enhance_num += 1
+            if enhance_num >= 2:
+                print('meta outer-train epoch enhance time: {}'.format(enhance_num))
             if enhance_num >= outer_enhance_top:
                 break
 

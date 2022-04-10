@@ -63,11 +63,11 @@ network_args: {
         patch_mode: default,
         meta_info: {
           inner_epoch: 30,
-          inner_lr: 0.001,
+          inner_lr: 0.01,
           inner_aug_type: 'zero',
           inner_choice_num: 2,
           inner_use_l1: False,
-          inner_enhance_threshold: 0.0, 
+          inner_enhance_threshold: 0.6, 
           inner_enhance_top: 20,
           outer_epoch: 1,
           outer_optimizer_name: adam, # adam,
@@ -75,7 +75,7 @@ network_args: {
             lr: 0.01,
             weight_decay: 5.e-4
           },
-          outer_enhance_threshold: 0.5, 
+          outer_enhance_threshold: 0.6, 
           outer_enhance_top: 10
         },
       },
