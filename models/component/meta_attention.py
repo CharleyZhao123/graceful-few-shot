@@ -115,9 +115,11 @@ class MetaAttention(nn.Module):
             nor_query = F.normalize(new_query, dim=-1)
             nor_key = F.normalize(new_key, dim=-1)
 
-            sim += torch.matmul(nor_query, nor_key.permute(
+            sim = sim + torch.matmul(nor_query, nor_key.permute(
                 0, 1, 2, 4, 3))  # [T, Q, W, 1, S]
             sim = F.normalize(sim, dim=-1)
+
+            print(sim[0, 0, 0, 0, :])
 
         # 加权(相似度)求和
         proto_feat = torch.matmul(sim, new_value).squeeze(-2)  # [T, Q, W, dim]
