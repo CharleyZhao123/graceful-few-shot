@@ -141,7 +141,7 @@ class MetaPatchMVANetwork(nn.Module):
 
         return fkey, fquery, flabel
 
-    def meta_train(self, key, query, meta_info={}, enhance_threshold=0.0, enhance_top=10, inner_weights='max', flag='train'):
+    def meta_train(self, key, query, meta_info={}, inner_weights='max', flag='train'):
         '''
         使用support set数据(key)进行inner-loop训练
         epoch_num: 正常训练的epoch次数, 每个epoch构建的tasks是不同的, 有难有易
@@ -151,6 +151,8 @@ class MetaPatchMVANetwork(nn.Module):
         # 关键参数
 
         inner_epoch_num = meta_info['inner_epoch']
+        enhance_threshold = meta_info['inner_enhance_threshold']
+        enhance_top = meta_info['inner_enhance_top']
         lr = meta_info['inner_lr']
         aug_type = meta_info['inner_aug_type']
         choice_num = meta_info['inner_choice_num']
@@ -281,8 +283,17 @@ class MetaPatchMVANetwork(nn.Module):
 
         # ===== 元训练 =====
         # 元训练模式的情况下, 每个batch的任务数只能为1
-        query_loss, query_acc = self.meta_train(key=shot_feat, query=query_feat, meta_info=self.meta_info,
-                              enhance_threshold=0.6, enhance_top=20, inner_weights='max', flag='train')
+        outer_enhance_threshold = self.meta_info['outer_enhance_threshold']
+        outer_enhance_top = self.meta_info['outer_enhance_top']
+        query_acc = -1.0
+        enhance_num = 0
+
+        while query_acc < outer_enhance_threshold:
+            query_loss, query_acc = self.meta_train(key=shot_feat, query=query_feat, meta_info=self.meta_info,
+                                inner_weights='max', flag='train')
+            enhance_num += 1
+            if enhance_num >= outer_enhance_top:
+                break
 
         return query_loss, query_acc
 
@@ -327,6 +338,6 @@ class MetaPatchMVANetwork(nn.Module):
         # ===== 元训练 =====
         # 元训练模式的情况下, 每个batch的任务数只能为1
         query_loss, query_acc = self.meta_train(key=shot_feat, query=query_feat, meta_info=self.meta_info,
-                              enhance_threshold=0.6, enhance_top=20, inner_weights='max', flag='finetune')
+                              inner_weights='max', flag='finetune')
 
         return query_loss, query_acc

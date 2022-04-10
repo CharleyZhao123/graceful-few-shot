@@ -67,12 +67,16 @@ network_args: {
           inner_aug_type: 'zero',
           inner_choice_num: 2,
           inner_use_l1: False,
+          inner_enhance_threshold: 0.0, 
+          inner_enhance_top: 20,
           outer_epoch: 1,
           outer_optimizer_name: adam, # adam,
           outer_optimizer_args: {
             lr: 0.01,
             weight_decay: 5.e-4
           },
+          outer_enhance_threshold: 0.5, 
+          outer_enhance_top: 10
         },
       },
     model_load_para: {},
