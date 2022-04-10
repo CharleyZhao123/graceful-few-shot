@@ -31,14 +31,18 @@ class MetaAttention(nn.Module):
         # Task Gate
         task_gate_indim = self.dim * (1 + shot_num)
         task_gate_weight = nn.Parameter(torch.ones(shot_num, task_gate_indim))
+        torch.nn.init.kaiming_normal_(task_gate_weight)
         task_gate_bias = nn.Parameter(torch.zeros(shot_num))
 
         # Sample-Level Transform
         if trans_type == 'adapter':
             hid_dim = dim//2
             down_linear_weight = nn.Parameter(torch.ones(1, way_num, shot_num, dim, hid_dim))
+            torch.nn.init.kaiming_normal_(down_linear_weight)
             up_linear_weight = nn.Parameter(torch.ones(1, way_num, shot_num, hid_dim, dim))
+            torch.nn.init.kaiming_normal_(up_linear_weight)            
             self.vars.extend([down_linear_weight, up_linear_weight, task_gate_weight, task_gate_bias])
+            # self.vars.extend([down_linear_weight, up_linear_weight])
         else:
             key_trans_weight = nn.Parameter(torch.ones(1, way_num, shot_num, dim, dim))
             self.vars.extend([key_trans_weight, task_gate_weight, task_gate_bias])
@@ -108,6 +112,7 @@ class MetaAttention(nn.Module):
             sim = F.softmax(sim, dim=-1)
         elif self.nor_type == 'l2_norm':
             sim = F.normalize(sim, dim=-1)
+        # print("1:")
         # print(sim[0, 0, 0, 0, :])
 
         # 相似度过滤
@@ -117,9 +122,11 @@ class MetaAttention(nn.Module):
 
             sim = sim + torch.matmul(nor_query, nor_key.permute(
                 0, 1, 2, 4, 3))  # [T, Q, W, 1, S]
+            # print("2:")
+            # print(sim[0, 0, 0, 0, :])
             sim = F.normalize(sim, dim=-1)
-
-            print(sim[0, 0, 0, 0, :])
+            # print("3:")
+            # print(sim[0, 0, 0, 0, :])
 
         # 加权(相似度)求和
         proto_feat = torch.matmul(sim, new_value).squeeze(-2)  # [T, Q, W, dim]

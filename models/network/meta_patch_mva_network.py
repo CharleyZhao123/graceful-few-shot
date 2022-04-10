@@ -141,7 +141,7 @@ class MetaPatchMVANetwork(nn.Module):
 
         return fkey, fquery, flabel
 
-    def meta_train(self, key, query, meta_info={}, enhance_threshold=0.0, enhance_top=10, flag='train'):
+    def meta_train(self, key, query, meta_info={}, enhance_threshold=0.0, enhance_top=10, inner_weights='max', flag='train'):
         '''
         使用support set数据(key)进行inner-loop训练
         epoch_num: 正常训练的epoch次数, 每个epoch构建的tasks是不同的, 有难有易
@@ -173,11 +173,16 @@ class MetaPatchMVANetwork(nn.Module):
         logits = self.get_logits(proto_feat, fquery)
         loss = F.cross_entropy(logits, flabel)
         acc = utils.compute_acc(logits, flabel)
-
+        print("========")
+        print(acc)
         grad = torch.autograd.grad(loss, self.mva.parameters())
         tuples = zip(grad, self.mva.parameters())
         fast_weights = list(map(lambda p: p[1] - lr * p[0], tuples))
         epoch += 1
+
+        # 保存最佳inner-weight
+        max_acc = acc
+        max_weights = fast_weights
 
         # 2: 第[2: inner_epoch]次更新
         while epoch < inner_epoch_num + 1:
@@ -190,10 +195,15 @@ class MetaPatchMVANetwork(nn.Module):
 
             # print('mva train epoch: {} acc={:.2f} loss={:.2f}'.format(
             #     epoch, acc, loss))
+            print(acc)
 
             grad = torch.autograd.grad(loss, self.mva.parameters())
             tuples = zip(grad, self.mva.parameters())
             fast_weights = list(map(lambda p: p[1] - lr * p[0], tuples))
+
+            if acc >= max_acc:
+                max_acc = acc
+                max_weights = fast_weights
 
             if acc < enhance_threshold:
                 enhance_num += 1
@@ -201,19 +211,23 @@ class MetaPatchMVANetwork(nn.Module):
                     enhance_num = 0
                     epoch += 1
                 else:
-                    pass
-                    # print('mva train epoch enhance time: {}'.format(
-                    #     enhance_num))
+                    print('meta inner-train epoch enhance time: {}'.format(
+                        enhance_num))
             else:
                 enhance_num = 0
                 epoch += 1
         
         # 3: 对query进行评估, 并outer更新模型
-        proto_feat = self.mva(query, key, fast_weights)
+        if inner_weights == 'max':
+            proto_feat = self.mva(query, key, max_weights)
+        else:
+            proto_feat = self.mva(query, key, fast_weights)
         label = fs.make_nk_label(self.way_num, self.query_num, self.batch_size).cuda()
         query_logits = self.get_logits(proto_feat, query)
         query_loss = F.cross_entropy(query_logits, label)
         query_acc = utils.compute_acc(query_logits, label)
+        print("query")
+        print(query_acc)
         # 优化
         if flag == 'train':
             outer_optimizer.zero_grad()
@@ -268,7 +282,7 @@ class MetaPatchMVANetwork(nn.Module):
         # ===== 元训练 =====
         # 元训练模式的情况下, 每个batch的任务数只能为1
         query_loss, query_acc = self.meta_train(key=shot_feat, query=query_feat, meta_info=self.meta_info,
-                              enhance_threshold=0.0, enhance_top=20, flag='train')
+                              enhance_threshold=0.6, enhance_top=20, inner_weights='max', flag='train')
 
         return query_loss, query_acc
 
@@ -313,6 +327,6 @@ class MetaPatchMVANetwork(nn.Module):
         # ===== 元训练 =====
         # 元训练模式的情况下, 每个batch的任务数只能为1
         query_loss, query_acc = self.meta_train(key=shot_feat, query=query_feat, meta_info=self.meta_info,
-                              enhance_threshold=0.0, enhance_top=20, flag='finetune')
+                              enhance_threshold=0.6, enhance_top=20, inner_weights='max', flag='finetune')
 
         return query_loss, query_acc

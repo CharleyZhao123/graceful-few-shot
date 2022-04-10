@@ -44,8 +44,8 @@ network_args: {
         encoder_args: {},
         encoder_load_para:
           {
-            # load_old_encoder: /space1/zhaoqing/code/few_shot_meta_baseline/save/pre_meta_2_stage/linear/metabasepre2/max-tva.pth,
-            load_old_encoder: /space0/songk/code/graceful-few-shot/save/old_ckpt/pre_meta_2_stage/max-tva.pth,
+            load_old_encoder: /space1/zhaoqing/code/few_shot_meta_baseline/save/pre_meta_2_stage/linear/metabasepre2/max-tva.pth,
+            # load_old_encoder: /space0/songk/code/graceful-few-shot/save/old_ckpt/pre_meta_2_stage/max-tva.pth,
           },
         mva_name: meta-attention,
         mva_args: {
@@ -70,7 +70,7 @@ network_args: {
           outer_epoch: 1,
           outer_optimizer_name: adam, # adam,
           outer_optimizer_args: {
-            lr: 0.001,
+            lr: 0.01,
             weight_decay: 5.e-4
           },
         },
