@@ -44,8 +44,8 @@ network_args: {
         encoder_args: {},
         encoder_load_para:
           {
-            load_old_encoder: /space1/zhaoqing/code/few_shot_meta_baseline/save/pre_meta_2_stage/linear/metabasepre2/max-tva.pth,
-            # load_old_encoder: /space0/songk/code/graceful-few-shot/save/old_ckpt/pre_meta_2_stage/max-tva.pth,
+            # load_old_encoder: /space1/zhaoqing/code/few_shot_meta_baseline/save/pre_meta_2_stage/linear/metabasepre2/max-tva.pth,
+            load_old_encoder: /space0/songk/code/graceful-few-shot/save/old_ckpt/pre_meta_2_stage/max-tva.pth,
           },
         mva_name: meta-attention,
         mva_args: {
@@ -62,12 +62,12 @@ network_args: {
         similarity_method: cos,  # 'cos', 'sqr'
         patch_mode: default,
         meta_info: {
-          inner_epoch: 30,
-          inner_lr: 0.01,
+          inner_epoch: 20,
+          inner_lr: 0.001,
           inner_aug_type: 'zero',
-          inner_choice_num: 2,
+          inner_choice_num: 5,
           inner_use_l1: False,
-          inner_enhance_threshold: 0.6, 
+          inner_enhance_threshold: 0.0, 
           inner_enhance_top: 20,
           outer_epoch: 1,
           outer_optimizer_name: adam, # adam,
@@ -75,7 +75,7 @@ network_args: {
             lr: 0.01,
             weight_decay: 5.e-4
           },
-          outer_enhance_threshold: 0.6, 
+          outer_enhance_threshold: 0.7, 
           outer_enhance_top: 10
         },
       },

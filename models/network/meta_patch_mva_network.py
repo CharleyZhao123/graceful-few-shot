@@ -241,7 +241,6 @@ class MetaPatchMVANetwork(nn.Module):
 
         return query_loss, query_acc
 
-        # print("meta inner loop train done.")
 
     def forward(self, image):
         # ===== 数据整理 =====
