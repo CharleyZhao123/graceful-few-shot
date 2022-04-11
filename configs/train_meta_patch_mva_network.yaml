@@ -3,7 +3,7 @@ train_dataloader_args: {
     dataset_args:
       {
         split: train,
-        patch_type: sampling,  # sampling
+        patch_type: grid,  # sampling, grid
         augment: default,  # clip, default
       },
     sampler_name: metatasks-sampler,
@@ -22,7 +22,7 @@ val_dataloader_args: {
     dataset_args:
       {
         split: val,
-        patch_type: sampling,  # sampling
+        patch_type: grid,  # sampling, grid
         augment: default,  # clip, default
       },
     sampler_name: metatasks-sampler,
@@ -49,7 +49,7 @@ network_args: {
           },
         mva_name: meta-attention,
         mva_args: {
-          shot_num: 20,  # shot_num = patch_num*origin_shot_num
+          shot_num: 14,  # shot_num = patch_num*origin_shot_num
           nor_type: softmax,  # 'softmax', 'l2_norm'
           similarity_method: 'cos'
         },
@@ -62,10 +62,10 @@ network_args: {
         similarity_method: cos,  # 'cos', 'sqr'
         patch_mode: default,
         meta_info: {
-          inner_epoch: 20,
+          inner_epoch: 30,
           inner_lr: 0.001,
           inner_aug_type: 'zero',
-          inner_choice_num: 5,
+          inner_choice_num: 2,
           inner_use_l1: False,
           inner_enhance_threshold: 0.0, 
           inner_enhance_top: 20,
@@ -75,7 +75,7 @@ network_args: {
             lr: 0.01,
             weight_decay: 5.e-4
           },
-          outer_enhance_threshold: 0.7, 
+          outer_enhance_threshold: 0.6, 
           outer_enhance_top: 10
         },
       },

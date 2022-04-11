@@ -176,7 +176,7 @@ class ImgMiniImageNet(Dataset):
         if self.patch_type == 'none':
             img = Image.open(self.data[i]).convert('RGB')
             return self.transform(img), self.label[i], imgname
-        elif self.patch_type == 'gird':
+        elif self.patch_type == 'grid':
             patch_list = []
             patch_nums = [3, 2]  # 一共3x3+2x2=13个patch
 
