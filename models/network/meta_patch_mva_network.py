@@ -1,4 +1,5 @@
 # changed from https://github.com/miguealanmath/MAML-Pytorch/blob/master/MAML-v1.ipynb
+from ctypes import util
 from numpy import outer
 import torch
 import torch.nn as nn
@@ -162,6 +163,12 @@ class MetaPatchMVANetwork(nn.Module):
         outer_optimizer_name = meta_info['outer_optimizer_name']
         outer_optimizer_args = meta_info['outer_optimizer_args']
 
+        use_continue_loss = meta_info['use_continue_loss']
+        continue_loss_weight = meta_info['continue_loss_weight']
+        use_meta_loss = meta_info['use_meta_loss']
+        meta_loss_weight = meta_info['meta_loss_weight']
+
+        # ===== 元学习 =====
         # 0: 准备outer-loop优化器
         if flag == 'train':
             outer_optimizer, outer_lr_scheduler = utils.make_optimizer(self.mva.parameters(), outer_optimizer_name, **outer_optimizer_args)
@@ -228,9 +235,21 @@ class MetaPatchMVANetwork(nn.Module):
         query_logits = self.get_logits(proto_feat, query)
         query_loss = F.cross_entropy(query_logits, label)
         query_acc = utils.compute_acc(query_logits, label)
-        print("query")
+        print("meta query acc")
         print(query_acc)
-        # 优化
+
+        # ===== 延续性学习 =====
+        if use_continue_loss:
+            continue_proto_feat = self.mva(query, key)
+            continue_logits = self.get_logits(continue_proto_feat, query)
+            continue_loss = F.cross_entropy(continue_logits, label)
+            continue_acc = utils.compute_acc(continue_logits, label)
+
+            query_loss = meta_loss_weight*query_loss + continue_loss_weight*continue_loss
+            print("continue query acc")
+            print(continue_acc)
+
+        # ===== 优化 =====
         if flag == 'train':
             outer_optimizer.zero_grad()
             query_loss.backward()
