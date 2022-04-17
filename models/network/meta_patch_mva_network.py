@@ -233,6 +233,7 @@ class MetaPatchMVANetwork(nn.Module):
             proto_feat = self.mva(query, key, fast_weights)
         label = fs.make_nk_label(self.way_num, self.query_num, self.batch_size).cuda()
         query_logits = self.get_logits(proto_feat, query)
+        print(query_logits[0, :])
         query_loss = F.cross_entropy(query_logits, label)
         query_acc = utils.compute_acc(query_logits, label)
         print("meta query acc")
@@ -242,6 +243,7 @@ class MetaPatchMVANetwork(nn.Module):
         if use_continue_loss:
             continue_proto_feat = self.mva(query, key)
             continue_logits = self.get_logits(continue_proto_feat, query)
+            print(continue_logits[0, :])
             continue_loss = F.cross_entropy(continue_logits, label)
             continue_acc = utils.compute_acc(continue_logits, label)
 
