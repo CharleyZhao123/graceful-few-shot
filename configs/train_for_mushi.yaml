@@ -9,7 +9,7 @@ mix_train_dataloader_args:
         shot_num: 140,
         query_num: 60,
       },
-    sampler_name: default-sampler,
+    sampler_name: default-sampler,  # sequential-sampler, default-sampler
     batch_size: 70,
   }
 

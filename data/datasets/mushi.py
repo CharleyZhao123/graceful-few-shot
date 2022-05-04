@@ -202,8 +202,8 @@ class Mushi(Dataset):
         if self.split == 'train':
             sim_true_rate = {
                 'sim': 0.7,
-                'mocod': 0.5,
-                'gan': 0.5,
+                'mocod': 0.7,
+                'gan': 0.3,
                 'true': 0.3
             }
             sim_shot_num = int(shot_num*sim_true_rate['sim'])
