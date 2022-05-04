@@ -85,13 +85,13 @@ class Mushi(Dataset):
         # 其他
         self.return_items = return_items
 
-    def get_sim_data(self, shot_num, query_num, type='mocod'):
+    def get_sim_data(self, shot_num, query_num, sim_type='mocod'):
         '''
         训练集: 仿真数据
         测试集: 仿真数据
         '''
         # 加载仿真数据集信息json文件
-        if tpye == 'mocod':
+        if sim_type == 'mocod':
             json_file = 'dataset_info.json'
         else:
             json_file = 'gan_mushi_info.json'
@@ -162,7 +162,7 @@ class Mushi(Dataset):
             c_image_list = os.listdir(c_floder_path)
 
             c_image_list.sort(key=lambda x: int(x[:-4]))
-            print(c_image_list)
+            # print(c_image_list)
             # 处理image path
             c_image_list = [os.path.join('true', c, p) for p in c_image_list]
 

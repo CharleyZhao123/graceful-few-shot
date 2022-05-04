@@ -1,7 +1,7 @@
 import os
 import argparse
 import utils
-utils.set_gpu('0')
+utils.set_gpu('2')
 import torch
 from models import build_model
 
@@ -24,7 +24,7 @@ def main(config):
     yaml.dump(config, open(os.path.join(save_path, 'config.yaml'), 'w'))
 
     # ===== 设定随机种子 =====
-    utils.set_seed(100)
+    utils.set_seed(1)
 
     # ===== 准备数据、模型 =====
     # sim train data
@@ -40,10 +40,10 @@ def main(config):
         config['true_train_dataloader_args'])
 
     # final train data
-    train_dataloader = true_train_dataloader
+    train_dataloader = mix_train_dataloader
 
     # sim val data
-    sim_val_dataloader = build_dataloader(config['sim_val_dataloader_args'])
+    # sim_val_dataloader = build_dataloader(config['sim_val_dataloader_args'])
 
     # true val data
     true_val_dataloader = build_dataloader(config['true_val_dataloader_args'])
@@ -63,8 +63,8 @@ def main(config):
     max_epoch = trainer_args['max_epoch']
     save_epoch = trainer_args['save_epoch']
 
-    max_sim_val_acc = 0.0
-    max_sim_val_acc_epoch = 0
+    # max_sim_val_acc = 0.0
+    # max_sim_val_acc_epoch = 0
 
     max_true_val_acc = 0.0
     max_true_val_acc_epoch = 0
@@ -102,18 +102,18 @@ def main(config):
 
         # 验证
         # sim
-        pretrain_model.eval()
-        for image, label in tqdm(sim_val_dataloader, desc='sim val', leave=False):
-            image = image.cuda()
-            label = label.cuda()
+        # pretrain_model.eval()
+        # for image, label in tqdm(sim_val_dataloader, desc='sim val', leave=False):
+        #     image = image.cuda()
+        #     label = label.cuda()
 
-            with torch.no_grad():
-                _, logits = pretrain_model(image)
-                ce_loss = F.cross_entropy(logits, label)
-                acc = utils.compute_acc(logits, label)
+        #     with torch.no_grad():
+        #         _, logits = pretrain_model(image)
+        #         ce_loss = F.cross_entropy(logits, label)
+        #         acc = utils.compute_acc(logits, label)
 
-            aves['sim_val_loss'].add(ce_loss.item())
-            aves['sim_val_acc'].add(acc)
+        #     aves['sim_val_loss'].add(ce_loss.item())
+        #     aves['sim_val_acc'].add(acc)
 
         # true
         pretrain_model.eval()
@@ -148,12 +148,12 @@ def main(config):
         tb_writer.add_scalars('loss', {'train': aves['train_loss']}, epoch)
         tb_writer.add_scalars('acc', {'train': aves['train_acc']}, epoch)
 
-        log_str += ', sim val {:.4f}|{:.4f}'.format(
-            aves['sim_val_loss'], aves['sim_val_acc'])
-        tb_writer.add_scalars(
-            'sim loss', {'sim val': aves['sim_val_loss']}, epoch)
-        tb_writer.add_scalars(
-            'sim acc', {'sim val': aves['sim_val_acc']}, epoch)
+        # log_str += ', sim val {:.4f}|{:.4f}'.format(
+        #     aves['sim_val_loss'], aves['sim_val_acc'])
+        # tb_writer.add_scalars(
+        #     'sim loss', {'sim val': aves['sim_val_loss']}, epoch)
+        # tb_writer.add_scalars(
+        #     'sim acc', {'sim val': aves['sim_val_acc']}, epoch)
 
         log_str += ', true val {:.4f}|{:.4f}'.format(
             aves['true_val_loss'], aves['true_val_acc'])
@@ -184,11 +184,11 @@ def main(config):
             torch.save(save_obj, os.path.join(
                 save_path, 'epoch-{}.pth'.format(epoch)))
 
-        if aves['sim_val_acc'] > max_sim_val_acc:
-            max_sim_val_acc = aves['sim_val_acc']
-            max_sim_val_acc_epoch = epoch
-            torch.save(save_obj, os.path.join(
-                save_path, 'max-sim-val-acc.pth'))
+        # if aves['sim_val_acc'] > max_sim_val_acc:
+        #     max_sim_val_acc = aves['sim_val_acc']
+        #     max_sim_val_acc_epoch = epoch
+        #     torch.save(save_obj, os.path.join(
+        #         save_path, 'max-sim-val-acc.pth'))
 
         if aves['true_val_acc'] > max_true_val_acc:
             max_true_val_acc = aves['true_val_acc']
@@ -198,8 +198,8 @@ def main(config):
 
         tb_writer.flush()
 
-    log_str = 'max sim val epoch: {}, acc: {}'.format(
-        max_sim_val_acc_epoch, max_sim_val_acc)
+    # log_str = 'max sim val epoch: {}, acc: {}'.format(
+    #     max_sim_val_acc_epoch, max_sim_val_acc)
     log_str += '\n'
     log_str += 'max true val epoch: {}, acc: {}'.format(
         max_true_val_acc_epoch, max_true_val_acc)
