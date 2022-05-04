@@ -85,18 +85,13 @@ class Mushi(Dataset):
         # 其他
         self.return_items = return_items
 
-    def get_sim_data(self, shot_num, query_num, type='mocod'):
+    def get_sim_data(self, shot_num, query_num):
         '''
         训练集: 仿真数据
         测试集: 仿真数据
         '''
         # 加载仿真数据集信息json文件
-        if tpye == 'mocod':
-            json_file = 'dataset_info.json'
-        else:
-            json_file = 'gan_mushi_info.json'
-
-        info_json_file = os.path.join(self.root_path, json_file)
+        info_json_file = os.path.join(self.root_path, 'dataset_info.json')
         with open(info_json_file, 'r') as json_f:
             info_dict = json.load(json_f)
 
@@ -202,21 +197,12 @@ class Mushi(Dataset):
         if self.split == 'train':
             sim_true_rate = {
                 'sim': 0.7,
-                'mocod': 0.5,
-                'gan': 0.5,
                 'true': 0.3
             }
             sim_shot_num = int(shot_num*sim_true_rate['sim'])
             true_shot_num = shot_num - sim_shot_num
             # 仿真数据
-            mocod_shot_num = int(sim_shot_num*sim_true_rate['mocod'])
-            gan_shot_num = sim_shot_num - mocod_shot_num
-
-            mocod_image, mocod_label = self.get_sim_data(mocod_shot_num, query_num, 'mocod')
-            gan_image, gan_label = self.get_sim_data(gan_shot_num, query_num, 'gan')
-
-            sim_image = mocod_image + gan_image
-            sim_label = mocod_label + gan_label
+            sim_image, sim_label = self.get_sim_data(sim_shot_num, query_num)
             # 真实数据
             true_image, true_label = self.get_true_data(
                 true_shot_num, query_num)

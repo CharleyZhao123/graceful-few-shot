@@ -1,0 +1,189 @@
+{
+    "fathers": [
+        {
+            "id": 0,
+            "name": "person"
+        },
+        {
+            "id": 1,
+            "name": "car"
+        },
+        {
+            "id": 2,
+            "name": "carrier"
+        },
+        {
+            "id": 3,
+            "name": "tank"
+        },
+        {
+            "id": 4,
+            "name": "armored"
+        },
+        {
+            "id": 5,
+            "name": "radar"
+        },
+        {
+            "id": 6,
+            "name": "launch"
+        }
+    ],
+    "categories": [
+        {
+            "id": 0,
+            "name": "girl",
+            "father": "person"
+        },
+        {
+            "id": 1,
+            "name": "woman",
+            "father": "person"
+        },
+        {
+            "id": 2,
+            "name": "man",
+            "father": "person"
+        },
+        {
+            "id": 3,
+            "name": "walkingman",
+            "father": "person"
+        },
+        {
+            "id": 4,
+            "name": "GAZ_Tiger",
+            "father": "carrier"
+        },
+        {
+            "id": 5,
+            "name": "TIGER",
+            "father": "carrier"
+        },
+        {
+            "id": 6,
+            "name": "MAZ537",
+            "father": "carrier"
+        },
+        {
+            "id": 7,
+            "name": "BTR152",
+            "father": "carrier"
+        },
+        {
+            "id": 8,
+            "name": "DJS",
+            "father": "carrier"
+        },
+        {
+            "id": 9,
+            "name": "Radar",
+            "father": "radar"
+        },
+        {
+            "id": 10,
+            "name": "radar",
+            "father": "radar"
+        },
+        {
+            "id": 11,
+            "name": "Launch_Vehicle",
+            "father": "launch"
+        },
+        {
+            "id": 12,
+            "name": "S_2",
+            "father": "launch"
+        },
+        {
+            "id": 13,
+            "name": "Surface_to_Air",
+            "father": "launch"
+        },
+        {
+            "id": 14,
+            "name": "MIM",
+            "father": "launch"
+        },
+        {
+            "id": 15,
+            "name": "MillitaryTruck01",
+            "father": "carrier"
+        },
+        {
+            "id": 16,
+            "name": "Truck",
+            "father": "carrier"
+        },
+        {
+            "id": 17,
+            "name": "BTR_152",
+            "father": "carrier"
+        },
+        {
+            "id": 18,
+            "name": "9T234",
+            "father": "launch"
+        },
+        {
+            "id": 19,
+            "name": "T-90",
+            "father": "tank"
+        },
+        {
+            "id": 20,
+            "name": "LAV",
+            "father": "armored"
+        },
+        {
+            "id": 21,
+            "name": "ArmoredVehicle",
+            "father": "armored"
+        },
+        {
+            "id": 22,
+            "name": "BTR70",
+            "father": "armored"
+        },
+        {
+            "id": 23,
+            "name": "Sedan",
+            "father": "car"
+        },
+        {
+            "id": 24,
+            "name": "SUV",
+            "father": "car"
+        },
+        {
+            "id": 25,
+            "name": "suv",
+            "father": "car"
+        },
+        {
+            "id": 26,
+            "name": "Hatch",
+            "father": "car"
+        },
+        {
+            "id": 27,
+            "name": "Hybrid",
+            "father": "car"
+        },
+        {
+            "id": 28,
+            "name": "sedan",
+            "father": "car"
+        },
+        {
+            "id": 29,
+            "name": "CAR",
+            "father": "car"
+        },
+        {
+            "id": 30,
+            "name": "DIS",
+            "father": "carrier"
+        }
+    ]
+}

@@ -1,6 +1,7 @@
 import os
 
-DEFAULT_ROOT = '/space0/songk/datasets'  # '/space1/zhaoqing/dataset/fsl'
+# DEFAULT_ROOT = '/space0/songk/datasets'
+DEFAULT_ROOT = '/space1/zhaoqing/dataset/fsl'
 
 datasets = {}
 

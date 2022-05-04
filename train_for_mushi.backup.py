@@ -24,7 +24,7 @@ def main(config):
     yaml.dump(config, open(os.path.join(save_path, 'config.yaml'), 'w'))
 
     # ===== 设定随机种子 =====
-    utils.set_seed(100)
+    utils.set_seed(100000)
 
     # ===== 准备数据、模型 =====
     # sim train data
@@ -40,7 +40,7 @@ def main(config):
         config['true_train_dataloader_args'])
 
     # final train data
-    train_dataloader = true_train_dataloader
+    train_dataloader = mix_train_dataloader
 
     # sim val data
     sim_val_dataloader = build_dataloader(config['sim_val_dataloader_args'])

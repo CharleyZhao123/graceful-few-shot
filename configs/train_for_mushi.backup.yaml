@@ -39,8 +39,8 @@ true_train_dataloader_args:
         split: train,
         augment: resize,
         type: true_data,
-        shot_num: 140,  # 70
-        query_num: 60,  # 30
+        shot_num: 70,  # 70
+        query_num: 30,
       },
     sampler_name: default-sampler,
     batch_size: 70,  # 70
@@ -69,11 +69,11 @@ true_val_dataloader_args:
         split: val,
         augment: default,
         type: true_data,
-        shot_num: 140,
-        query_num: 60,
+        shot_num: 70,
+        query_num: 30,
       },
     sampler_name: default-sampler,
-    batch_size: 60,
+    batch_size: 30,
   }
 
 network_args:
