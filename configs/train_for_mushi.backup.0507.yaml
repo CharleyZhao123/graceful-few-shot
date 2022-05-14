@@ -1,18 +1,3 @@
-# mix_train_dataloader_args:
-#   {
-#     dataset_name: mushi,
-#     dataset_args:
-#       {
-#         split: train,
-#         augment: resize,
-#         type: mix_data,
-#         shot_num: 175,
-#         query_num: 75,
-#       },
-#     sampler_name: default-sampler,  # sequential-sampler, default-sampler
-#     batch_size: 35,
-#   }
-
 mix_train_dataloader_args:
   {
     dataset_name: mushi,
@@ -73,21 +58,6 @@ sim_val_dataloader_args:
     batch_size: 30,
   }
 
-# true_val_dataloader_args:
-#   {
-#     dataset_name: mushi,
-#     dataset_args:
-#       {
-#         split: val,
-#         augment: default,
-#         type: true_data,
-#         shot_num: 175,
-#         query_num: 75,
-#       },
-#     sampler_name: default-sampler,
-#     batch_size: 75,  # 75
-#   }
-
 true_val_dataloader_args:
   {
     dataset_name: mushi,
@@ -100,7 +70,7 @@ true_val_dataloader_args:
         query_num: 60,
       },
     sampler_name: default-sampler,
-    batch_size: 60,  # 75
+    batch_size: 60,
   }
 
 network_args:
@@ -126,5 +96,5 @@ trainer_args:
     optimizer_name: sgd,
     optimizer_args: { lr: 0.001, weight_decay: 5.e-4 },
     max_epoch: 100,
-    save_epoch: 100,
+    save_epoch: 1,
   }

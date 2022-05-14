@@ -28,7 +28,7 @@ def get_gan_mushi_info(gan_base_path, subsets_info, dataset_info_json_path):
             path = os.path.join(gan_base_path, s)
             file_list = os.listdir(path)
             for f in file_list:
-                if '_paste' in f:
+                if '.png' in f:
                     file_path = os.path.join(path, f)
                     images_list.append(file_path)
         
@@ -44,10 +44,11 @@ def get_gan_mushi_info(gan_base_path, subsets_info, dataset_info_json_path):
 
 
 if __name__ == '__main__':
-    gan_base_path = '/space1/leoxing/mocod_results'
+    gan_base_path = '/space1/leoxing/new_mocod_results'
     subsets_info = {
-    'person': ['girl', 'woman', 'man', 'walkingman', 'men', 'Ped1_2', 'Ped3_2', 'Man_2', 'men_2'],
+    'person': ['Person', 'girl', 'woman', 'man', 'walkingman', 'men', 'Ped1_2', 'Ped3_2', 'Man_2', 'men_2'],
     'carrier': [
+        'Carrier',
         'VH_GAZ_Tiger_2',
         'VH_GAZ_Tiger_4',
         'TIGER',
@@ -60,11 +61,11 @@ if __name__ == '__main__':
         'DJS-2022_11'
         'DJS2022_2'
     ],
-    'tank': ['T-90', 'T-90_2', 'T-90_4', 'T-90A_2'],
-    'armored': ['LAV_2', 'VH_BTR70_2', 'VH_BTR152_11', 'DV_LAV-Jackal_2', 'DV-LAV-Jackal_8'],
-    'car': ['HatchBack_2', 'Sedan_2', 'Sedan2_2', 'sedan_4door_2', 'sedan2Door_2', 'sedan2Door', 'Hybrid_2']
+    'tank': ['Tank', 'T-90', 'T-90_2', 'T-90_4', 'T-90A_2'],
+    'armored': ['Armored', 'LAV_2', 'VH_BTR70_2', 'VH_BTR152_11', 'DV_LAV-Jackal_2', 'DV-LAV-Jackal_8'],
+    'car': ['Car', 'HatchBack_2', 'Sedan_2', 'Sedan2_2', 'sedan_4door_2', 'sedan2Door_2', 'sedan2Door', 'Hybrid_2']
     }
 
-    dataset_info_json_path = 'gan_mushi_info.json'
+    dataset_info_json_path = 'new_gan_mushi_info.json'
 
     get_gan_mushi_info(gan_base_path, subsets_info, dataset_info_json_path)

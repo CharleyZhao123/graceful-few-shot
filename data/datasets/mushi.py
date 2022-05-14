@@ -94,7 +94,7 @@ class Mushi(Dataset):
         if sim_type == 'mocod':
             json_file = 'dataset_info.json'
         else:
-            json_file = 'gan_mushi_info.json'
+            json_file = 'new_gan_mushi_info.json'
 
         info_json_file = os.path.join(self.root_path, json_file)
         with open(info_json_file, 'r') as json_f:
@@ -201,10 +201,10 @@ class Mushi(Dataset):
         # 训练集为混合数据
         if self.split == 'train':
             sim_true_rate = {
-                'sim': 0.7,
-                'mocod': 0.9,
-                'gan': 0.1,
-                'true': 0.3
+                'sim': 0.72,  # 0.7
+                'mocod': 0.7,  # 0.7
+                'gan': 0.3,  # 0.3
+                'true': 0.28  # 0.3
             }
             sim_shot_num = int(shot_num*sim_true_rate['sim'])
             true_shot_num = shot_num - sim_shot_num
@@ -212,8 +212,8 @@ class Mushi(Dataset):
             mocod_shot_num = int(sim_shot_num*sim_true_rate['mocod'])
             gan_shot_num = sim_shot_num - mocod_shot_num
 
-            mocod_image, mocod_label = self.get_sim_data(mocod_shot_num, query_num, 'mocod')
-            gan_image, gan_label = self.get_sim_data(gan_shot_num, query_num, 'gan')
+            mocod_image, mocod_label = self.get_sim_data(mocod_shot_num, 2, 'mocod')
+            gan_image, gan_label = self.get_sim_data(gan_shot_num, 2, 'gan')
 
             sim_image = mocod_image + gan_image
             sim_label = mocod_label + gan_label
