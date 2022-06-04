@@ -125,6 +125,6 @@ trainer_args:
   {
     optimizer_name: sgd,
     optimizer_args: { lr: 0.001, weight_decay: 5.e-4 },
-    max_epoch: 100,
-    save_epoch: 100,
+    max_epoch: 100000,
+    save_epoch: 200000,
   }

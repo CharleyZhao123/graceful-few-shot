@@ -78,9 +78,9 @@ network_args: {
           outer_enhance_threshold: 0.0, 
           outer_enhance_top: 10,
           use_continue_loss: True,
-          continue_loss_weight: 1.0,
+          continue_loss_weight: 0.5,
           use_meta_loss: True,
-          meta_loss_weight: 0.5
+          meta_loss_weight: 1.0
         },
       },
     model_load_para: {},
